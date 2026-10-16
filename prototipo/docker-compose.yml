@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # vector (padrão, sem mapa base) | osm | azure
+      MAP_PROVIDER: ${MAP_PROVIDER:-vector}
+      AZURE_MAPS_KEY: ${AZURE_MAPS_KEY:-}
+      # IA com Claude (sem a chave o /api/ask devolve o trecho mais relevante do plano)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}

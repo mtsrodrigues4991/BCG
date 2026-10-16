@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Env / secrets
+.env
+!.env.example
+
+# Build / cache
+.cache/
+dist/
+
+# Arquivos fora do código
+*.zip
+material/
+paper_water.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

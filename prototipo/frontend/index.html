@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<title>Hidro Congo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+
+<div class="app">
+  <aside class="side" aria-label="Parâmetros e resumo">
+    <header class="brand">
+      <div>
+        <h1>Hidro Congo</h1>
+        <p class="sub">Poço tubular ou bombeamento de rio, região por região da República do Congo</p>
+      </div>
+      <span class="mode" id="mode" title="Origem dos cálculos">…</span>
+    </header>
+
+    <section class="block">
+      <h2>Horizonte</h2>
+      <div class="seg" role="radiogroup" aria-label="Horizonte de planejamento">
+        <button type="button" id="hz6" data-h="6" role="radio">6 meses</button>
+        <button type="button" id="hz12" data-h="12" role="radio">1 ano</button>
+        <button type="button" id="hzc" data-h="custom" role="radio">Customizado</button>
+      </div>
+      <div class="row2">
+        <label for="horizon_months">Meses
+          <input id="horizon_months" type="number" min="1" max="60" value="12">
+        </label>
+        <label for="start_month">Início
+          <select id="start_month"></select>
+        </label>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Projeto de irrigação</h2>
+      <label class="slider" for="area_ha">Área irrigada <output id="o_area_ha"></output>
+        <input id="area_ha" type="range" min="1" max="100" step="1" value="5">
+      </label>
+      <label class="slider" for="c_energia">Custo da energia <output id="o_c_energia"></output>
+        <input id="c_energia" type="range" min="0.05" max="0.6" step="0.01" value="0.22">
+      </label>
+      <label class="slider" for="WTD_max">Profundidade máx. viável (WTD_max) <output id="o_WTD_max"></output>
+        <input id="WTD_max" type="range" min="20" max="150" step="5" value="60">
+      </label>
+      <label class="slider" for="D_max_km">Distância máx. ao rio (D_max) <output id="o_D_max_km"></output>
+        <input id="D_max_km" type="range" min="2" max="40" step="1" value="15">
+      </label>
+    </section>
+
+    <details class="block" id="weights">
+      <summary><h2>Pesos do índice IR</h2></summary>
+      <label class="slider" for="w1">w₁ adequação do poço <output id="o_w1"></output><input id="w1" type="range" min="0" max="1" step="0.05" value="0.3"></label>
+      <label class="slider" for="w2">w₂ inadequação do rio <output id="o_w2"></output><input id="w2" type="range" min="0" max="1" step="0.05" value="0.25"></label>
+      <label class="slider" for="w3">w₃ eficiência de custo <output id="o_w3"></output><input id="w3" type="range" min="0" max="1" step="0.05" value="0.25"></label>
+      <label class="slider" for="w4">w₄ confiabilidade climática <output id="o_w4"></output><input id="w4" type="range" min="0" max="1" step="0.05" value="0.1"></label>
+      <label class="slider" for="w5">w₅ acessibilidade <output id="o_w5"></output><input id="w5" type="range" min="0" max="1" step="0.05" value="0.1"></label>
+      <button type="button" class="link" id="reset">Restaurar padrões</button>
+    </details>
+
+    <section class="block">
+      <h2>Departamentos</h2>
+      <div class="table-wrap">
+        <table class="depts">
+          <thead><tr><th>Departamento</th><th>Indicação</th><th class="num">% poço</th><th class="num">P média</th></tr></thead>
+          <tbody id="dept-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block sources">
+      <h2>Dados</h2>
+      <p><strong>Reais:</strong> <span id="src-real"></span></p>
+      <p><strong>Sintéticos:</strong> <span id="src-syn"></span></p>
+    </section>
+  </aside>
+
+  <main class="mapcol">
+    <div class="mhead" aria-hidden="true">Hidro Congo</div>
+    <div class="toolbar" role="radiogroup" aria-label="Camada do mapa">
+      <button type="button" id="ly-rec" data-layer="rec" role="radio">Recomendação</button>
+      <button type="button" id="ly-prob" data-layer="prob" role="radio">Probabilidade do poço</button>
+      <button type="button" id="ly-conf" data-layer="conf" role="radio">Confiança</button>
+      <span class="stats" id="stats"></span>
+    </div>
+    <div id="map" aria-label="Mapa da República do Congo"></div>
+    <div class="legend" id="legend"></div>
+    <section class="detail" id="detail" hidden aria-live="polite"></section>
+  </main>
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="model.js"></script>
+<script src="app.js"></script>

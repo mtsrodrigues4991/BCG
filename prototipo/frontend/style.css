@@ -49,6 +49,16 @@ html, body { height: 100%; }
 .mhead { display: none; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font-body); }
 .app { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; height: 100%; }
+/* barra lateral recolhida: o mapa ocupa a largura toda */
+.app.side-collapsed { grid-template-columns: 1fr; }
+.app.side-collapsed .side { display: none; }
+.toolbar .side-toggle {
+  display: grid; place-items: center; width: 32px; height: 30px; padding: 0; border-radius: var(--r);
+  color: var(--ink); margin-right: 4px;
+}
+.toolbar .side-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.side-toggle .chev { transition: transform .15s; transform-origin: 14px 12px; }
+.app.side-collapsed .side-toggle .chev { transform: scaleX(-1); }
 .side {
   background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto;
   padding-block: 16px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;

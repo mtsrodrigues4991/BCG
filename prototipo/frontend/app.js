@@ -211,6 +211,17 @@
   }
 
   // ---------------------------------------------------------------- sobreposição e resolução
+  // barra lateral: recolhe/expande e redimensiona o mapa
+  function setSide(open) {
+    document.querySelector(".app").classList.toggle("side-collapsed", !open);
+    const b = $("side-toggle"), label = open ? "Hide sidebar" : "Show sidebar";
+    b.setAttribute("aria-expanded", String(open));
+    b.setAttribute("aria-label", label);
+    b.title = label;
+    try { localStorage.setItem("hidro-side", open ? "open" : "closed"); } catch (e) {}
+    if (map) { map.invalidateSize(); setTimeout(() => map.invalidateSize(), 200); }
+  }
+
   function setOverlay(on) {
     state.overlay = on;
     for (const l of [cellLayer, riverLayer, cityLayer, deptLabels]) {
@@ -458,6 +469,11 @@
       });
     }
     for (const b of document.querySelectorAll("[data-layer]")) b.addEventListener("click", () => setLayer(b.dataset.layer));
+    $("side-toggle").addEventListener("click", () => setSide(document.querySelector(".app").classList.contains("side-collapsed")));
+    let sideOpen = true;
+    try { sideOpen = localStorage.getItem("hidro-side") !== "closed"; } catch (e) {}
+    setSide(sideOpen);
+
     // tema: light / dark força data-theme; auto remove e segue o sistema (o observer abaixo recolore o mapa)
     const setTheme = (t) => {
       if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;

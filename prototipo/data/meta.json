@@ -7,6 +7,18 @@
     5.5
   ],
   "n_cells": 1245,
+  "resolutions": {
+    "0.4": {
+      "file": "cells.geojson",
+      "n_cells": 1245,
+      "km": 44
+    },
+    "0.2": {
+      "file": "cells_0.2.geojson",
+      "n_cells": 4847,
+      "km": 22
+    }
+  },
   "zones": {
     "costeira": "Bacia sedimentar costeira (Moanda)",
     "kongo_central": "Kongo Central (Mayombe e Schisto-calcaire/karst)",

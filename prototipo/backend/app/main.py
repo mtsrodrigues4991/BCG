@@ -12,6 +12,8 @@ Endpoints principais:
   GET  /api/explain/{cell_id}         explicação em linguagem natural
   POST /api/ask                       perguntas à IA (Claude) sobre o plano e, opcionalmente, uma célula
   POST /api/chat                      chat do assistente hídrico com busca web (rotas_chat.py)
+
+As rotas de células aceitam ?res=0.4 (padrão, ~44 km) ou ?res=0.2 (~22 km); veja /api/meta.
 """
 from __future__ import annotations
 
@@ -43,13 +45,28 @@ app.include_router(chat_router)
 
 
 @lru_cache
-def cells_fc() -> dict:
-    return json.loads((DATA / "cells.geojson").read_text())
+def resolutions() -> dict:
+    """Grades disponíveis, ex. {"0.4": {"file": "cells.geojson", ...}, "0.2": {...}}; a primeira é a padrão."""
+    m = json.loads((DATA / "meta.json").read_text())
+    return m.get("resolutions") or {str(m["cell_deg"]): {"file": "cells.geojson", "n_cells": m["n_cells"]}}
+
+
+def check_res(res: str | None) -> str:
+    if res is None:
+        return next(iter(resolutions()))
+    if res not in resolutions():
+        raise HTTPException(404, f"resolução '{res}' indisponível; use uma de {list(resolutions())}")
+    return res
 
 
 @lru_cache
-def cells() -> list[dict]:
-    return [f["properties"] for f in cells_fc()["features"]]
+def cells_fc(res: str | None = None) -> dict:
+    return json.loads((DATA / resolutions()[check_res(res)]["file"]).read_text())
+
+
+@lru_cache
+def cells(res: str | None = None) -> list[dict]:
+    return [f["properties"] for f in cells_fc(check_res(res))["features"]]
 
 
 def _round(obj, nd=4):
@@ -80,14 +97,14 @@ def meta():
     m = json.loads((DATA / "meta.json").read_text())
     m["params_default"] = Params().to_dict()
     m["gpi"] = {"factors": GPI_FACTORS, "weights": GPI_W, "lambda_max": AHP_LAMBDA, "CR": AHP_CR}
-    m["map"] = {"provider": os.environ.get("MAP_PROVIDER", "vector"),
-                "azure_maps_key": os.environ.get("AZURE_MAPS_KEY", "")}
+    m["resolutions"] = resolutions()
+    m["map"] = {"azure_maps_key": os.environ.get("AZURE_MAPS_KEY", "")}
     return _round(m)
 
 
 @app.get("/api/cells")
-def get_cells():
-    return cells_fc()
+def get_cells(res: str | None = None):
+    return cells_fc(check_res(res))
 
 
 @app.get("/api/layers/{name}")
@@ -99,40 +116,43 @@ def layer(name: str):
     return JSONResponse(json.loads((DATA / files[name]).read_text()))
 
 
-def run(params: dict):
+def run(params: dict, res: str):
     p = Params.from_dict(params)
-    res = [evaluate(c, p) for c in cells()]
-    return p, res
+    out = [evaluate(c, p) for c in cells(res)]
+    return p, out
 
 
 @app.post("/api/recommendations")
-def recommendations(req: RecRequest):
-    p, res = run(req.params)
-    out = res if req.detail else [{k: r[k] for k in SLIM} | {"rio_nome": r["rio"]["name"],
-                                                             "C_rio_total": r["rio"]["C_total"]} for r in res]
-    return _round({"params": p.to_dict(), "results": out, "departments": summarize(cells(), res)})
+def recommendations(req: RecRequest, res: str | None = None):
+    res = check_res(res)
+    p, rs = run(req.params, res)
+    out = rs if req.detail else [{k: r[k] for k in SLIM} | {"rio_nome": r["rio"]["name"],
+                                                            "C_rio_total": r["rio"]["C_total"]} for r in rs]
+    return _round({"params": p.to_dict(), "res": res, "results": out, "departments": summarize(cells(res), rs)})
 
 
-def nearest_cell(lat: float, lon: float) -> dict:
-    best = min(cells(), key=lambda c: (c["lat"] - lat) ** 2 + ((c["lon"] - lon) * math.cos(math.radians(lat))) ** 2)
+def nearest_cell(lat: float, lon: float, res: str) -> dict:
+    best = min(cells(res), key=lambda c: (c["lat"] - lat) ** 2 + ((c["lon"] - lon) * math.cos(math.radians(lat))) ** 2)
     d = math.hypot((best["lat"] - lat) * 110.57, (best["lon"] - lon) * 111.32 * math.cos(math.radians(lat)))
-    if d > 30:
+    if d > 0.8 * float(res) * 111:  # além de ~meia diagonal da célula: fora da grade
         raise HTTPException(404, "coordenada fora da área da RDC coberta pela grade")
     return best
 
 
 @app.get("/api/recommendation/point")
-def point(lat: float, lon: float, horizon_months: int = 12, start_month: int = 6, area_ha: float = 5.0):
-    c = nearest_cell(lat, lon)
+def point(lat: float, lon: float, horizon_months: int = 12, start_month: int = 6, area_ha: float = 5.0,
+          res: str | None = None):
+    c = nearest_cell(lat, lon, check_res(res))
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
     r = evaluate(c, p)
     return _round({"cell": {k: v for k, v in c.items()}, "result": r, "explanation": explain(c, r, p)})
 
 
 @app.get("/api/regions/{dept}")
-def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: float = 5.0):
+def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: float = 5.0,
+           res: str | None = None):
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
-    sel = [c for c in cells() if dept in c["depts"]]
+    sel = [c for c in cells(check_res(res)) if dept in c["depts"]]
     if not sel:
         raise HTTPException(404, f"província '{dept}' não encontrada")
     res = [evaluate(c, p) for c in sel]
@@ -141,10 +161,11 @@ def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: f
 
 
 @app.post("/api/cells/{cell_id}/evaluate")
-def evaluate_cell(cell_id: int, req: RecRequest):
-    if not 0 <= cell_id < len(cells()):
+def evaluate_cell(cell_id: int, req: RecRequest, res: str | None = None):
+    cs = cells(check_res(res))
+    if not 0 <= cell_id < len(cs):
         raise HTTPException(404, "célula inexistente")
-    c = cells()[cell_id]
+    c = cs[cell_id]
     p = Params.from_dict(req.params)
     r = evaluate(c, p)
     return _round({"cell": c, "result": r, "explanation": explain(c, r, p)})
@@ -152,10 +173,11 @@ def evaluate_cell(cell_id: int, req: RecRequest):
 
 @app.get("/api/explain/{cell_id}")
 def explain_cell(cell_id: int, horizon_months: int = Query(12), start_month: int = Query(6),
-                 area_ha: float = Query(5.0)):
-    if not 0 <= cell_id < len(cells()):
+                 area_ha: float = Query(5.0), res: str | None = None):
+    cs = cells(check_res(res))
+    if not 0 <= cell_id < len(cs):
         raise HTTPException(404, "célula inexistente")
-    c = cells()[cell_id]
+    c = cs[cell_id]
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
     r = evaluate(c, p)
     return {"cell_id": cell_id, "text": explain(c, r, p)}
@@ -166,10 +188,11 @@ class AskRequest(BaseModel):
     k: int = 3
     cell_id: int | None = None   # opcional: inclui a recomendação desta célula no contexto
     params: dict = {}
+    res: str | None = None       # resolução da grade a que cell_id pertence
 
 
-def cell_context(cell_id: int, params: dict) -> dict:
-    c = cells()[cell_id]
+def cell_context(cell_id: int, params: dict, res: str) -> dict:
+    c = cells(res)[cell_id]
     p = Params.from_dict(params)
     r = evaluate(c, p)
     keep = ("cls", "IR", "P_poco", "GPI", "WTD", "H", "n_pocos", "C_poco_total", "A_sub", "A_sup",
@@ -185,9 +208,10 @@ def cell_context(cell_id: int, params: dict) -> dict:
 def ask(req: AskRequest):
     ctx = None
     if req.cell_id is not None:
-        if not 0 <= req.cell_id < len(cells()):
+        res = check_res(req.res)
+        if not 0 <= req.cell_id < len(cells(res)):
             raise HTTPException(404, "célula inexistente")
-        ctx = cell_context(req.cell_id, req.params)
+        ctx = cell_context(req.cell_id, req.params, res)
     return rag.answer(req.question, req.k, ctx)
 
 

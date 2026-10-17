@@ -48,3 +48,17 @@ def test_formulas_behave():
     far = evaluate(c | {"stream": c["stream"] | {"d_km": 50}, "major": c["major"] | {"d_km": 50}}, p)
     assert far["A_sup"] == 0
     assert AHP_CR < 0.1
+
+
+def test_resolutions():
+    m = client.get("/api/meta").json()
+    assert list(m["resolutions"]) == ["0.4", "0.2"]
+    fine = client.get("/api/cells", params={"res": "0.2"}).json()["features"]
+    assert len(fine) == m["resolutions"]["0.2"]["n_cells"] > 4000
+    r = client.post("/api/recommendations?res=0.2", json={"params": {}}).json()
+    assert r["res"] == "0.2" and len(r["results"]) == len(fine) and len(r["departments"]) == 26
+    pt = client.get("/api/recommendation/point", params={"lat": -4.33, "lon": 15.31, "res": "0.2"}).json()
+    assert pt["cell"]["dept"] == "Kinshasa"
+    assert client.post("/api/cells/4000/evaluate?res=0.2", json={"params": {}}).status_code == 200
+    assert client.post("/api/cells/4000/evaluate", json={"params": {}}).status_code == 404  # só existe em 0.2
+    assert client.get("/api/cells", params={"res": "0.3"}).status_code == 404

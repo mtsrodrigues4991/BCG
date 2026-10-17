@@ -59,7 +59,8 @@ PROV_NAMES = {"Lower Uele": "Bas-Uele", "Upper Uele": "Haut-Uele", "North Kivu":
 
 # Área de processamento (um pouco maior que o país para não truncar bacias)
 BBOX = (12.0, -13.6, 31.4, 5.5)
-CELL_DEG = 0.4          # ~44 km
+# resoluções da grade: a primeira é a padrão (cells.geojson); as demais vão para cells_<deg>.geojson
+RESOLUTIONS = (0.4, 0.2)   # ~44 km e ~22 km
 DEM_ZOOM = 6            # ~2,4 km por pixel
 STREAM_MIN_KM2 = 50     # limiar de drenagem (densidade / distância à drenagem)
 RIVER_MIN_KM2 = 500     # limiar de "rio bombeável" derivado do DEM
@@ -476,111 +477,122 @@ def main():
     road_tree = STRtree(roads)
     country_local_cities = [c for c in cities if c["pop"] >= 8000]
 
-    cells = []
-    gx = np.arange(BBOX[0], BBOX[2], CELL_DEG)
-    gy = np.arange(BBOX[1], BBOX[3], CELL_DEG)
-    cid = 0
-    for y in gy:
-        for x in gx:
-            sq = box(x, y, x + CELL_DEG, y + CELL_DEG)
-            if not sq.intersects(country):
-                continue
-            part = sq.intersection(country)
-            if part.area < 0.15 * sq.area:
-                continue
-            c = part.representative_point() if not part.contains(part.centroid) else part.centroid
-            lon, lat = c.x, c.y
-            shares = sorted(((d[1].intersection(part).area / part.area, d[0]) for d in depts), reverse=True)
-            dept = shares[0][1]
-            dept_list = [n for a, n in shares if a >= 0.05 or n == dept]
-            # DEM na célula
-            cm = (lons >= x) & (lons < x + CELL_DEG)
-            rm = (lats >= y) & (lats < y + CELL_DEG)
-            sub = dem[np.ix_(rm, cm)]
-            if sub.size == 0:
-                continue
-            kx, ky = km_per_deg(lat)
-            px_x = abs(lons[1] - lons[0]) * kx * 1000
-            px_y = abs(lats[1] - lats[0]) * ky * 1000
-            gy_, gx_ = np.gradient(sub, px_y, px_x)
-            slope = float(np.mean(np.hypot(gx_, gy_)) * 100)
-            lap = np.gradient(gx_, px_x, axis=1) + np.gradient(gy_, px_y, axis=0)
-            curv = float(np.mean(lap) * 1e5)  # 1/100 km
-            elev = float(np.mean(sub))
-            # ponto de implantação: terço baixo do relevo da célula (onde ficam
-            # as lavouras e a captação), usado para HAND e desnível ao rio
-            e_low = float(np.percentile(sub, 25))
-            # drenagem
-            pt = Point(lon, lat)
-            near = small_tree.nearest(pt)
-            ns = small_tree_geoms[near]
-            d_d = to_local_km(LineString([pt, ns.interpolate(ns.project(pt))]), lat).length
-            clip = [small_tree_geoms[i].intersection(sq) for i in small_tree.query(sq)]
-            dens = sum(to_local_km(g, lat).length for g in clip) / (to_local_km(sq, lat).area)
-            # rio derivado do DEM mais próximo (melhor relação vazão/distância)
-            dk = np.hypot((rp_lon - lon) * kx, (rp_lat - lat) * ky)
-            within = np.flatnonzero(dk <= max(25.0, float(dk.min()) + 1))
-            j = int(within[np.argmax(rp_q[within] / (1 + dk[within]))])
-            stream = {"d_km": round(float(dk[j]), 2), "q": round(float(rp_q[j]), 2),
-                      "z": round(float(rp_z[j]), 1), "acc_km2": round(float(rp_acc[j]))}
-            # HAND: altura acima da drenagem mais próxima (limiar pequeno)
-            ds = np.hypot((sp_lon - lon) * kx, (sp_lat - lat) * ky)
-            near_s = np.argpartition(ds, 5)[:5] if ds.size > 5 else np.arange(ds.size)
-            hand = max(0.0, e_low - float(np.min(sp_z[near_s])))
-            # grande rio (Natural Earth + vazão de literatura)
-            dm = np.hypot((mp_lon - lon) * kx, (mp_lat - lat) * ky)
-            m = int(np.argmin(dm))
-            nm = mp_name[m]
-            major = {"name": nm, "d_km": round(float(dm[m]), 2), "q": MAJOR_RIVERS[nm][0],
-                     "regime": MAJOR_RIVERS[nm][1], "z": round(dem_at(mp_lon[m], mp_lat[m]), 1)}
-            # clima
-            pm, _ = idw(stations, "prcp", lat, lon)
-            # confiança: distância à estação medida (GHCN) mais próxima, não à grade POWER
-            d_st = min((math.hypot((lon - s["lon"]) * kx, (lat - s["lat"]) * ky) for s in ghcn), default=999.0)
-            tx, _ = idw(stations, "tmax", lat, lon, elev=elev)
-            tn, _ = idw(stations, "tmin", lat, lon, elev=elev)
-            pet_m = hargreaves_month(tx, tn, lat)
-            p, pet = float(pm.sum()), float(pet_m.sum())
-            et = budyko_et(p, pet)
-            # acesso
-            rd = road_tree.nearest(pt)
-            d_road = to_local_km(LineString([pt, roads[rd].interpolate(roads[rd].project(pt))]), lat).length
-            dtown = min(country_local_cities, key=lambda cc: (cc["lon"] - lon) ** 2 + (cc["lat"] - lat) ** 2)
-            d_town = math.hypot((dtown["lon"] - lon) * kx, (dtown["lat"] - lat) * ky)
-            pop_idx = sum(cc["pop"] / (1 + (math.hypot((cc["lon"] - lon) * kx, (cc["lat"] - lat) * ky) / 30) ** 2)
-                          for cc in cities)
-            d_ocean = to_local_km(LineString([pt, coast.interpolate(coast.project(pt))]), lat).length \
-                if not ocean_poly.contains(pt) else 0.0
-            z = zone_of(lon, lat, d_ocean)
-            # turfeiras da Cuvette Centrale (Lac Tumba / Mai-Ndombe / Ubangi), aprox.: baixadas da bacia
-            peat = z == "cuvette" and hand < 8 and 16.5 <= lon <= 21.5 and -2.5 <= lat <= 2.5
-            ndvi = float(np.clip((p - 800) / 1400, 0.35, 0.9))  # SINTÉTICO (proxy por chuva)
-            cells.append({
-                "id": cid, "dept": dept, "depts": dept_list, "lon": round(lon, 4), "lat": round(lat, 4),
-                "geom": part.simplify(0.005),
-                "E": round(elev, 1), "E_low": round(e_low, 1), "S": round(slope, 2), "C": round(curv, 3), "HAND": round(hand, 1),
-                "D_d_km": round(d_d, 2), "dens": round(dens, 3),
-                "P": round(p), "P_m": [round(float(v), 1) for v in pm],
-                "PET": round(pet), "PET_m": [round(float(v), 1) for v in pet_m], "ET": round(et),
-                "zone": z, "lito": ZONES[z][1], "So": ZONES[z][2], "yield_Ls": ZONES[z][3],
-                "WTD0": ZONES[z][4], "NDVI": round(ndvi, 2), "peat": peat,
-                "stream": stream, "major": major,
-                "D_road_km": round(d_road, 2), "D_town_km": round(d_town, 1), "town": dtown["name"],
-                "pop_idx": round(pop_idx), "D_station_km": round(d_st, 1),
-            })
-            cid += 1
-    log(" ", len(cells), "células;", len(depts), "províncias")
-    zc = defaultdict(int)
-    for c in cells:
-        zc[c["zone"]] += 1
-    log("  zonas:", dict(zc), "| turfeiras:", sum(c["peat"] for c in cells))
+    def build_cells(cell_deg):
+        cells = []
+        gx = np.arange(BBOX[0], BBOX[2], cell_deg)
+        gy = np.arange(BBOX[1], BBOX[3], cell_deg)
+        cid = 0
+        for y in gy:
+            for x in gx:
+                sq = box(x, y, x + cell_deg, y + cell_deg)
+                if not sq.intersects(country):
+                    continue
+                part = sq.intersection(country)
+                if part.area < 0.15 * sq.area:
+                    continue
+                c = part.representative_point() if not part.contains(part.centroid) else part.centroid
+                lon, lat = c.x, c.y
+                shares = sorted(((d[1].intersection(part).area / part.area, d[0]) for d in depts), reverse=True)
+                dept = shares[0][1]
+                dept_list = [n for a, n in shares if a >= 0.05 or n == dept]
+                # DEM na célula
+                cm = (lons >= x) & (lons < x + cell_deg)
+                rm = (lats >= y) & (lats < y + cell_deg)
+                sub = dem[np.ix_(rm, cm)]
+                if sub.size == 0:
+                    continue
+                kx, ky = km_per_deg(lat)
+                px_x = abs(lons[1] - lons[0]) * kx * 1000
+                px_y = abs(lats[1] - lats[0]) * ky * 1000
+                gy_, gx_ = np.gradient(sub, px_y, px_x)
+                slope = float(np.mean(np.hypot(gx_, gy_)) * 100)
+                lap = np.gradient(gx_, px_x, axis=1) + np.gradient(gy_, px_y, axis=0)
+                curv = float(np.mean(lap) * 1e5)  # 1/100 km
+                elev = float(np.mean(sub))
+                # ponto de implantação: terço baixo do relevo da célula (onde ficam
+                # as lavouras e a captação), usado para HAND e desnível ao rio
+                e_low = float(np.percentile(sub, 25))
+                # drenagem
+                pt = Point(lon, lat)
+                near = small_tree.nearest(pt)
+                ns = small_tree_geoms[near]
+                d_d = to_local_km(LineString([pt, ns.interpolate(ns.project(pt))]), lat).length
+                clip = [small_tree_geoms[i].intersection(sq) for i in small_tree.query(sq)]
+                dens = sum(to_local_km(g, lat).length for g in clip) / (to_local_km(sq, lat).area)
+                # rio derivado do DEM mais próximo (melhor relação vazão/distância)
+                dk = np.hypot((rp_lon - lon) * kx, (rp_lat - lat) * ky)
+                within = np.flatnonzero(dk <= max(25.0, float(dk.min()) + 1))
+                j = int(within[np.argmax(rp_q[within] / (1 + dk[within]))])
+                stream = {"d_km": round(float(dk[j]), 2), "q": round(float(rp_q[j]), 2),
+                          "z": round(float(rp_z[j]), 1), "acc_km2": round(float(rp_acc[j]))}
+                # HAND: altura acima da drenagem mais próxima (limiar pequeno)
+                ds = np.hypot((sp_lon - lon) * kx, (sp_lat - lat) * ky)
+                near_s = np.argpartition(ds, 5)[:5] if ds.size > 5 else np.arange(ds.size)
+                hand = max(0.0, e_low - float(np.min(sp_z[near_s])))
+                # grande rio (Natural Earth + vazão de literatura)
+                dm = np.hypot((mp_lon - lon) * kx, (mp_lat - lat) * ky)
+                m = int(np.argmin(dm))
+                nm = mp_name[m]
+                major = {"name": nm, "d_km": round(float(dm[m]), 2), "q": MAJOR_RIVERS[nm][0],
+                         "regime": MAJOR_RIVERS[nm][1], "z": round(dem_at(mp_lon[m], mp_lat[m]), 1)}
+                # clima
+                pm, _ = idw(stations, "prcp", lat, lon)
+                # confiança: distância à estação medida (GHCN) mais próxima, não à grade POWER
+                d_st = min((math.hypot((lon - s["lon"]) * kx, (lat - s["lat"]) * ky) for s in ghcn), default=999.0)
+                tx, _ = idw(stations, "tmax", lat, lon, elev=elev)
+                tn, _ = idw(stations, "tmin", lat, lon, elev=elev)
+                pet_m = hargreaves_month(tx, tn, lat)
+                p, pet = float(pm.sum()), float(pet_m.sum())
+                et = budyko_et(p, pet)
+                # acesso
+                rd = road_tree.nearest(pt)
+                d_road = to_local_km(LineString([pt, roads[rd].interpolate(roads[rd].project(pt))]), lat).length
+                dtown = min(country_local_cities, key=lambda cc: (cc["lon"] - lon) ** 2 + (cc["lat"] - lat) ** 2)
+                d_town = math.hypot((dtown["lon"] - lon) * kx, (dtown["lat"] - lat) * ky)
+                pop_idx = sum(cc["pop"] / (1 + (math.hypot((cc["lon"] - lon) * kx, (cc["lat"] - lat) * ky) / 30) ** 2)
+                              for cc in cities)
+                d_ocean = to_local_km(LineString([pt, coast.interpolate(coast.project(pt))]), lat).length \
+                    if not ocean_poly.contains(pt) else 0.0
+                z = zone_of(lon, lat, d_ocean)
+                # turfeiras da Cuvette Centrale (Lac Tumba / Mai-Ndombe / Ubangi), aprox.: baixadas da bacia
+                peat = z == "cuvette" and hand < 8 and 16.5 <= lon <= 21.5 and -2.5 <= lat <= 2.5
+                ndvi = float(np.clip((p - 800) / 1400, 0.35, 0.9))  # SINTÉTICO (proxy por chuva)
+                cells.append({
+                    "id": cid, "dept": dept, "depts": dept_list, "lon": round(lon, 4), "lat": round(lat, 4),
+                    "geom": part.simplify(0.005),
+                    "E": round(elev, 1), "E_low": round(e_low, 1), "S": round(slope, 2), "C": round(curv, 3), "HAND": round(hand, 1),
+                    "D_d_km": round(d_d, 2), "dens": round(dens, 3),
+                    "P": round(p), "P_m": [round(float(v), 1) for v in pm],
+                    "PET": round(pet), "PET_m": [round(float(v), 1) for v in pet_m], "ET": round(et),
+                    "zone": z, "lito": ZONES[z][1], "So": ZONES[z][2], "yield_Ls": ZONES[z][3],
+                    "WTD0": ZONES[z][4], "NDVI": round(ndvi, 2), "peat": peat,
+                    "stream": stream, "major": major,
+                    "D_road_km": round(d_road, 2), "D_town_km": round(d_town, 1), "town": dtown["name"],
+                    "pop_idx": round(pop_idx), "D_station_km": round(d_st, 1),
+                })
+                cid += 1
+        return cells
+
+    grids = {}
+    for deg in RESOLUTIONS:
+        cells = build_cells(deg)
+        zc = defaultdict(int)
+        for c in cells:
+            zc[c["zone"]] += 1
+        log(f"  {deg}°:", len(cells), "células;", len(depts), "províncias | zonas:", dict(zc),
+            "| turfeiras:", sum(c["peat"] for c in cells))
+        grids[deg] = cells
 
     log("6/6 gravando arquivos")
-    fc = {"type": "FeatureCollection", "features": []}
-    for c in cells:
-        g = c.pop("geom")
-        fc["features"].append({"type": "Feature", "geometry": rnd(g), "properties": c})
-    (OUT / "cells.geojson").write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")))
+    resolutions = {}
+    for i, (deg, cells) in enumerate(grids.items()):
+        fname = "cells.geojson" if i == 0 else f"cells_{deg}.geojson"
+        fc = {"type": "FeatureCollection", "features": []}
+        for c in cells:
+            g = c.pop("geom")
+            fc["features"].append({"type": "Feature", "geometry": rnd(g), "properties": c})
+        (OUT / fname).write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")))
+        resolutions[str(deg)] = {"file": fname, "n_cells": len(cells), "km": round(deg * 111)}
 
     dfc = {"type": "FeatureCollection", "features": [
         {"type": "Feature", "properties": {"name": n}, "geometry": rnd(g.simplify(0.01))} for n, g in depts]}
@@ -604,7 +616,8 @@ def main():
         [{k: s[k] for k in ("id", "name", "lat", "lon", "elev", "n_months")} | {"P": round(sum(s["prcp"]))}
          for s in ghcn], ensure_ascii=False))
     meta = {
-        "cell_deg": CELL_DEG, "bbox": BBOX, "n_cells": len(cells),
+        "cell_deg": RESOLUTIONS[0], "bbox": BBOX, "n_cells": resolutions[str(RESOLUTIONS[0])]["n_cells"],
+        "resolutions": resolutions,
         "zones": {k: v[0] for k, v in ZONES.items()},
         "sources": {
             "real": [

@@ -4,7 +4,13 @@ Protótipo do hackathon que implementa o [plano de arquitetura](../plano_arquite
 província da República Democrática do Congo (RDC), recomenda **poço tubular** ou **bombeamento de rio**, com probabilidade
 de sucesso do poço, profundidade, custo e os fatores que pesaram na decisão.
 
-O país é dividido em **1.245 células de 0,4° (~44 km)**, agregadas nas **26 províncias**.
+O país é dividido em células de **0,4° (~44 km, 1.245 células, padrão)** ou **0,2° (~22 km, 4.847
+células)**, à escolha no mapa, agregadas nas **26 províncias**.
+
+No mapa, a barra de camadas tem dois grupos: **Análise** (recomendação, probabilidade do poço, confiança)
+e **Aquíferos** (domínio hidrogeológico, profundidade do lençol, vazão por poço, com as turfeiras em
+contorno tracejado). A **sobreposição** pode ser desligada ou ter a opacidade ajustada para ver o mapa
+base do Azure Maps (ruas ou satélite).
 
 ## Como rodar
 
@@ -55,8 +61,7 @@ O plano do MVP (2 recursos no resource group `SAO-PAULO-team-2`, imagem no Docke
 
 | Variável | Efeito |
 |---|---|
-| `MAP_PROVIDER` | `vector` (padrão, só camadas vetoriais), `osm` (OpenStreetMap) ou `azure` |
-| `AZURE_MAPS_KEY` | chave do Azure Maps, usada quando `MAP_PROVIDER=azure` |
+| `AZURE_MAPS_KEY` | chave do Azure Maps: liga o mapa base (Ruas/Satélite) sob a sobreposição. Sem ela o mapa mostra só as camadas do projeto. A chave vai para o navegador via `/api/meta`; restrinja-a por domínio no portal |
 | `ANTHROPIC_API_KEY` | liga a IA (Claude) no `/api/ask` e a caixa "Pergunte à IA" no painel da célula; sem ela a resposta é extrativa (BM25 local) |
 | `ANTHROPIC_MODEL` | modelo do Claude (padrão `claude-opus-5-5`) |
 | `BING_SUBSCRIPTION_KEY` | chave do Bing Web Search usada pelo chat (`/api/chat`); sem ela o chat usa a busca web nativa do Claude |

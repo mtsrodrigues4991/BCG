@@ -82,11 +82,33 @@
 
   <main class="mapcol">
     <div class="mhead" aria-hidden="true">Hidro Congo</div>
-    <div class="toolbar" role="radiogroup" aria-label="Camada do mapa">
-      <button type="button" id="ly-rec" data-layer="rec" role="radio">Recomendação</button>
-      <button type="button" id="ly-prob" data-layer="prob" role="radio">Probabilidade do poço</button>
-      <button type="button" id="ly-conf" data-layer="conf" role="radio">Confiança</button>
+    <div class="toolbar">
+      <div class="tgroup" role="radiogroup" aria-label="Camada do mapa">
+        <span class="tlabel">Análise</span>
+        <button type="button" id="ly-rec" data-layer="rec" role="radio">Recomendação</button>
+        <button type="button" id="ly-prob" data-layer="prob" role="radio">Probabilidade do poço</button>
+        <button type="button" id="ly-conf" data-layer="conf" role="radio">Confiança</button>
+        <span class="tlabel">Aquíferos</span>
+        <button type="button" id="ly-zones" data-layer="zones" role="radio">Zonas</button>
+        <button type="button" id="ly-wtd" data-layer="wtd" role="radio">Profundidade do lençol</button>
+        <button type="button" id="ly-yield" data-layer="yield" role="radio">Vazão por poço</button>
+      </div>
       <span class="stats" id="stats"></span>
+    </div>
+    <div class="toolbar toolbar2">
+      <label class="chk" for="overlay"><input type="checkbox" id="overlay" checked> Sobreposição</label>
+      <label class="op" for="opacity">Opacidade <input type="range" id="opacity" min="0.2" max="1" step="0.05" value="0.8"></label>
+      <span class="tgroup" id="base-group">
+        <span class="tlabel">Mapa base</span>
+        <span class="mini-seg" role="radiogroup" aria-label="Mapa base">
+          <button type="button" data-base="road" role="radio">Ruas</button><button type="button" data-base="imagery" role="radio">Satélite</button>
+        </span>
+        <span class="hint-key" id="base-hint" hidden>defina AZURE_MAPS_KEY</span>
+      </span>
+      <span class="tgroup" id="res-group">
+        <span class="tlabel">Resolução</span>
+        <span class="mini-seg" role="radiogroup" aria-label="Resolução da grade" id="res-seg"></span>
+      </span>
     </div>
     <div id="map" aria-label="Mapa da República Democrática do Congo"></div>
     <div class="legend" id="legend"></div>

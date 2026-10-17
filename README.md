@@ -82,15 +82,16 @@ de água reais do WPdx.
 > Proposta do time para levar o protótipo adiante; não é um negócio em operação. A análise completa,
 > com números do modelo, riscos e o que falta construir, está em [MODELO_NEGOCIO.md](MODELO_NEGOCIO.md).
 
-Cada cliente paga pelo que mais valoriza: **o governo paga para errar menos ao perfurar**, **a empresa
-de água paga para encontrar e atender clientes com menos custo**, e **o agricultor paga pela água, não
-pela informação**.
+**Somos a camada de inteligência: não perfuramos, não operamos poços e não vendemos água. Vendemos a
+probabilidade de encontrar água antes da perfuração, calculada a partir de dados.** O governo paga para
+errar menos ao perfurar, a empresa de água paga para saber onde instalar e onde estão os clientes, e o
+agricultor recebe a informação de graça.
 
-| Cliente | O que compra | Como pagamos a conta |
+| Cliente | O que compra | Como cobramos |
 |---|---|---|
-| **Governos** e programas financiados por bancos de desenvolvimento | **Análise de probabilidade**: estudos por província, triagem de locais antes da licitação, licença da plataforma | Contrato fixo + **bônus por poço que encontra água**. Divide o risco enquanto o modelo não está validado e obriga o envio do resultado de cada perfuração, que calibra o modelo |
-| **Empresas de distribuição de água** | Onde instalar (água + clientes perto), logística da sonda e dos poços, captação de agricultores, cobrança por mobile money | Assinatura, **taxa sobre a água vendida** ou **parceria por projeto**: nós trazemos local, demanda e cobrança; o parceiro investe e opera; a margem é dividida |
-| **Agricultores** | **Ponto de água mais próximo funcionando**, relato de poço seco ou quebrado, pedido de água | Não pagam pela informação. Pagam pela água, por uso, e a nossa taxa vem embutida na tarifa do parceiro |
+| **Governos** e programas financiados por bancos de desenvolvimento | **Análise de probabilidade**: estudos por província, triagem de locais antes da licitação, licença da plataforma | Contrato fixo + **bônus por poço que encontra água**. O contrato também exige o resultado de cada perfuração, que calibra o modelo |
+| **Empresas de perfuração e distribuição de água** | Onde instalar (água + clientes perto), logística da sonda e dos poços, lista de agricultores interessados | Assinatura, **análise por local** ou **parceria comercial**: indicamos local e demanda, o parceiro perfura, opera e cobra a água, e recebemos uma taxa por poço produtivo |
+| **Agricultores** | **Ponto de água mais próximo funcionando**, relato de poço seco ou quebrado, pedido de água | Não pagam. Os relatos e pedidos viram dados e demanda, que geram receita com governo e empresas |
 
 **O que os números do modelo mostram:**
 

@@ -11,10 +11,12 @@ piloto**, e estão marcados assim.
 
 ## 1. A tese em uma frase
 
-Cada cliente paga pelo que mais valoriza: **o governo paga para errar menos ao perfurar**, **a empresa
-de água paga para encontrar e atender clientes com menos custo**, e **o agricultor paga pela água, não
-pela informação**. Os dados que cada um gera (perfurações bem-sucedidas e secas, poços que pararam,
-demanda) melhoram o modelo, e o modelo calibrado é o ativo da empresa.
+**Somos a camada de inteligência: não perfuramos, não operamos poços e não vendemos água. Vendemos a
+probabilidade de encontrar água antes da perfuração, calculada a partir de dados.** Cada cliente paga
+pelo que mais valoriza: **o governo paga para errar menos ao perfurar**, **a empresa de água paga para
+saber onde instalar e onde estão os clientes**, e **o agricultor recebe a informação de graça** (a água
+ele paga ao operador). Os dados que cada um devolve (perfurações bem-sucedidas e secas, poços que
+pararam, demanda) melhoram o modelo, e o modelo calibrado é o ativo da empresa.
 
 ## 2. O que os números dizem
 
@@ -71,33 +73,29 @@ comunitários.
 redor, cobrando uma tarifa. A tarifa paga a manutenção, e isso ataca o motivo de 22% dos poços estarem
 parados: segundo a validação, o que faz um poço parar é sobretudo manutenção e gestão, não falta de água.
 
-**O que nós entregamos:**
+**O que nós entregamos (só análise; a perfuração, a operação e a cobrança são do parceiro):**
 
 1. **Onde instalar:** locais com alta chance de água **e** com agricultores perto. É o modelo de hoje
    cruzado com a demanda (população do WorldPop, área agrícola do ESA WorldCover e cadastro de
    agricultores).
 2. **Logística:** quantos poços e onde colocá-los para atender mais hectares por dólar investido;
    ordem de perfuração para a sonda percorrer menos estrada; poço ou rio em cada local.
-3. **Captação de clientes:** agricultores que pediram água pelo app ou pelo WhatsApp viram demanda
-   confirmada antes de a empresa investir.
-4. **Cobrança:** registro de consumo e pagamento por mobile money (M-Pesa, Orange Money, Airtel Money),
-   com painel de quem pagou. Esse é o problema de controle de pagamentos da persona *Clara Commune*.
+3. **Demanda:** agricultores que pediram água pelo app ou pelo WhatsApp viram uma lista de clientes
+   potenciais antes de a empresa investir.
 
 **Como ganhamos (três formatos, do mais simples ao mais ambicioso):**
 
 | Formato | Como funciona | Quando faz sentido |
 |---|---|---|
-| **Assinatura** | A empresa paga uma mensalidade pela plataforma (seleção de locais, logística, painel) | Empresas que já têm clientes e cobrança |
-| **Taxa sobre a água vendida** | Fazemos a cobrança e ficamos com uma porcentagem de cada pagamento (hipótese: 5–10%) | Quando a cobrança passa pela nossa plataforma |
-| **Parceria por projeto** | Nós trazemos local, demanda e cobrança; o parceiro traz o investimento e a operação; a margem é dividida em contrato | Projetos novos, em que o parceiro não teria os clientes sem nós |
+| **Assinatura** | A empresa paga uma mensalidade pela plataforma e pela API (seleção de locais, logística, demanda) | Empresas que perfuram com frequência |
+| **Análise por local** | A empresa paga por local avaliado antes de mobilizar a sonda | Empresas que perfuram pouco ou testam o serviço |
+| **Parceria comercial** | Indicamos local e demanda; o parceiro perfura, opera e cobra a água; recebemos uma taxa por poço produtivo nos locais indicados | Projetos novos, em que o parceiro não teria local nem clientes sem nós |
 
-**Exemplo ilustrativo (hipótese a validar):** um sistema de 5 ha vende ~29 mil m³ por ano. A USD 0,30
-por m³ (pouco mais que o dobro do custo de investimento e energia, deixando espaço para manutenção e
-margem), a receita é de ~USD 8.800 por ano. Uma taxa de 10% rende ~USD 880 por ano para nós; com 100
-sistemas, ~USD 88 mil por ano. O preço real depende de quanto o agricultor consegue pagar, e isso só se
-descobre no piloto.
+**Exemplo ilustrativo (hipótese a validar):** cobrando 10–20% da economia esperada de ~USD 4.400 por poço
+produtivo, a análise sai a USD 450–900 por local. Um parceiro que avalia 100 locais por ano gera
+USD 45–90 mil por ano para nós.
 
-**Cuidado com conflito de interesse:** se ganhamos com a água vendida por um parceiro, o governo pode
+**Cuidado com conflito de interesse:** se ganhamos uma taxa pelos poços de um parceiro, o governo pode
 desconfiar das nossas recomendações. A análise vendida ao governo precisa ser **independente e com
 método público** (o modelo e a validação já são abertos neste repositório), e o contrato com o parceiro
 deve ser declarado.
@@ -117,11 +115,11 @@ registrados estava parado, e o levantamento mais recente do WPdx na RDC termina 
 - **Orientação da temporada:** quando irrigar e quanto custa, pela IA, na língua do agricultor.
 
 **Como ganhamos:** **o agricultor não paga pela informação.** Ele não tem como pagar, e cada agricultor
-que usa e relata deixa o mapa melhor para todos. A receita vem de forma indireta:
+que usa e relata deixa o mapa melhor para todos. A água ele paga ao operador, não a nós. A receita vem
+de forma indireta:
 
 | Fonte | Como |
 |---|---|
-| Água comprada pela plataforma | A taxa da seção 4 está embutida no preço da água |
 | Indicação de clientes | A empresa parceira paga por agricultor que vira cliente |
 | Cooperativas | Assinatura de baixo custo para planejar a temporada do grupo |
 | Dados agregados | O status dos poços, agregado e sem identificar ninguém, alimenta o produto do governo (monitoramento de programas) |
@@ -158,8 +156,8 @@ e a empresa tem receita garantida.
 | Cliente | Paga por | Formato | Quando a receita começa |
 |---|---|---|---|
 | Governo e programas financiados | Análise de probabilidade, estudos provinciais, licença | Contrato fixo + bônus por poço produtivo | Primeiro piloto |
-| Empresas de água | Seleção de locais, logística, clientes e cobrança | Assinatura, taxa sobre a água vendida ou parceria por projeto | Quando houver cobrança pela plataforma |
-| Agricultores | Água (não a informação) | Pagamento por uso via mobile money, embutido na tarifa do parceiro | Junto com as empresas de água |
+| Empresas de água | Seleção de locais, logística e demanda | Assinatura, análise por local ou taxa por poço produtivo indicado | Primeiro contrato com uma empresa de perfuração |
+| Agricultores | Nada a nós: a informação é gratuita, e a água é paga ao operador | Geram dados (relatos) e demanda, que viram receita com governo e empresas | Junto com as empresas de água |
 | Cooperativas | Planejamento da temporada | Assinatura baixa | Depois do piloto |
 
 ## 8. Riscos
@@ -168,7 +166,7 @@ e a empresa tem receita garantida.
 |---|---|
 | O modelo não está validado | Vender com piloto e pagamento por resultado; exigir em contrato os registros de perfuração com sucesso e fracasso |
 | O agricultor não consegue pagar | Começar por hortaliças e frutas perto de mercados; subsídio por hectare para culturas básicas; pagamento por uso, depois da colheita |
-| Direito de captar água | A Lei da Água da RDC (2015) trata a água como bem público e exige autorização para captação: operar sempre com um parceiro autorizado e validar com advogado local |
+| Direito de captar água | A Lei da Água da RDC (2015) trata a água como bem público e exige autorização para captação. Nós não captamos: a autorização é do parceiro que perfura e opera. Validar com advogado local |
 | Atraso no pagamento do governo | Priorizar contratos financiados por bancos de desenvolvimento e agências da ONU |
 | Dados desatualizados | Relatos dos agricultores, dados de consumo dos parceiros e, depois, medidores de vazão (IoT) nos poços |
 | Conflito de interesse com o parceiro | Análise para o governo independente e com método público; contratos declarados |
@@ -182,20 +180,33 @@ pontos do WPdx com a situação de cada um e explica tudo com IA. Para cobrar, f
 | Para | O que falta |
 |---|---|
 | **Governo** | Relatório em PDF por província e por lista de locais; contas de usuário; envio dos registros de perfuração do cliente; usar o modelo v2 como padrão e calibrá-lo com esses registros |
-| **Empresas de água** | Cadastro de agricultores e mapa de demanda; otimização de onde instalar N poços; integração com mobile money; painel de pagamentos |
+| **Empresas de água** | Cadastro de agricultores e mapa de demanda; otimização de onde instalar N poços; relatório de locais priorizados por chance de água e demanda |
 | **Agricultores** | Rota "ponto de água mais próximo funcionando" na API; rota para relatar a situação de um poço; canal WhatsApp ou SMS; funcionamento offline com sincronização |
 | **Plataforma** | Autenticação e limite de uso na API (hoje qualquer pessoa pode chamar o `/api/chat`), registro de auditoria e termos de privacidade |
 
-## 10. Próximo passo: piloto
+## 10. Próximo passo: piloto de dados
 
-Uma província, um parceiro de perfuração e o governo provincial, por uma temporada seca. A sugestão é
-**Kinshasa**: tem o maior mercado de hortaliças do país, estradas para a sonda e é uma das regiões com
-mais pontos do WPdx para comparar.
+Não perfuramos. O piloto mede o modelo com **perfurações que já aconteceram**, em 90 dias:
 
-O que medir:
+1. **Reunir os registros de perfuração**, com sucesso **e** com poço seco, do Ministério, do ONHR, da
+   REGIDESO, de ONGs e de empresas de perfuração que atuaram na província.
+2. **Medir o acerto:** comparar a probabilidade que o modelo dá a cada local com o que a perfuração
+   encontrou, antes de qualquer perfuração nova.
+3. **Calibrar o modelo** com esses registros (a seção 3.9 do plano prevê Random Forest/XGBoost quando
+   houver dados de campo).
+4. **Entregar** o mapa calibrado da província e a taxa de acerto medida.
+
+A sugestão é **Kinshasa**: tem o maior mercado de hortaliças do país, concentra órgãos de governo e
+empresas de perfuração (e os registros delas) e é uma das regiões com mais pontos do WPdx para comparar.
+
+O que medir no piloto:
+
+- taxa de acerto do modelo nas perfurações históricas (AUC e a taxa de sucesso entre os locais com maior
+  probabilidade, comparada com a média);
+- quanto a calibração com os registros melhora essa taxa.
+
+O que medir depois, quando os clientes perfurarem nos locais indicados (dados que eles devolvem):
 
 - taxa de perfurações secas nos locais recomendados, comparada com o histórico da região;
 - custo por poço produtivo;
-- poços funcionando 12 meses depois;
-- m³ vendidos e pagamentos em dia;
-- quanto os agricultores aceitam pagar por m³ em cada cultura.
+- poços funcionando 12 meses depois.

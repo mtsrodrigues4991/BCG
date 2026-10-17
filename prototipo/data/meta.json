@@ -20,33 +20,33 @@
     }
   },
   "zones": {
-    "costeira": "Bacia sedimentar costeira (Moanda)",
-    "kongo_central": "Kongo Central (Mayombe e Schisto-calcaire/karst)",
-    "rift": "Rift Albertino/Kivu (vulcânicas e fraturadas)",
-    "cuvette": "Cuvette Centrale (sedimentar quaternária)",
-    "kalahari": "Planaltos Kalahari/Batéké (areias espessas)",
-    "kasai": "Cráton do Kasai (embasamento cristalino)",
-    "katanga": "Katanga (metassedimentos e dolomitos)",
-    "embasamento": "Embasamento cristalino (norte e leste)"
+    "costeira": "Moanda coastal sedimentary basin",
+    "kongo_central": "Kongo Central (Mayombe and Schisto-calcaire/karst)",
+    "rift": "Albertine/Kivu rift (volcanic and fractured)",
+    "cuvette": "Cuvette Centrale (Quaternary sediments)",
+    "kalahari": "Kalahari/Batéké plateaus (thick sands)",
+    "kasai": "Kasai craton (crystalline basement)",
+    "katanga": "Katanga (metasediments and dolomites)",
+    "embasamento": "Crystalline basement (north and east)"
   },
   "sources": {
     "real": [
-      "geoBoundaries (gbOpen, OSM): limites das 26 províncias",
-      "Natural Earth 10m: rios principais, estradas, cidades",
-      "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevação, declive, curvatura",
-      "Rede de drenagem e vazão derivadas do DEM (priority-flood + D8, escoamento por Budyko)",
-      "NOAA GHCN-Daily: normais mensais de chuva e temperatura de 22 estações",
-      "NASA POWER (MERRA-2, climatologia 2001-2025): 102 pontos em grade de 1.5°",
-      "PET por Hargreaves (FAO-56) a partir das temperaturas"
+      "geoBoundaries (gbOpen, OSM): boundaries of the 26 provinces",
+      "Natural Earth 10m: major rivers, roads, cities",
+      "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevation, slope, curvature",
+      "Drainage network and discharge derived from the DEM (priority-flood + D8, Budyko runoff)",
+      "NOAA GHCN-Daily: monthly rainfall and temperature normals from 22 stations",
+      "NASA POWER (MERRA-2, 2001-2025 climatology): 102 points on a 1.5° grid",
+      "PET by Hargreaves (FAO-56) from temperatures"
     ],
     "synthetic": [
-      "Domínios hidrogeológicos, favorabilidade litológica e vazão por poço (aprox. Africa Groundwater Atlas / MacDonald 2012)",
-      "Permeabilidade do solo por domínio (no lugar do SoilGrids)",
-      "NDVI estimado a partir da chuva (no lugar do Sentinel/MODIS)",
-      "Coeficientes β da regressão de WTD (sem poços de calibração)",
-      "Vazões médias dos grandes rios: valores aproximados de literatura",
-      "Índice populacional por gravidade das cidades (no lugar do WorldPop)",
-      "Turfeiras da Cuvette Centrale: área aproximada"
+      "Hydrogeological domains, lithological favourability and borehole yield (approx. Africa Groundwater Atlas / MacDonald 2012)",
+      "Soil permeability by domain (instead of SoilGrids)",
+      "NDVI estimated from rainfall (instead of Sentinel/MODIS)",
+      "β coefficients of the WTD regression (no calibration wells)",
+      "Mean discharge of major rivers: approximate literature values",
+      "Population index by city gravity model (instead of WorldPop)",
+      "Cuvette Centrale peatlands: approximate extent"
     ]
   }
 }

@@ -347,14 +347,14 @@ def budyko_et(p, pet, w=BUDYKO_W):
 # ----------------------------------------------------------------------------
 ZONES = {
     # nome: (rótulo, favorabilidade litológica, permeabilidade do solo, vazão por poço L/s, WTD base m)
-    "costeira": ("Bacia sedimentar costeira (Moanda)", 0.75, 0.70, 3.0, 12.0),
-    "kongo_central": ("Kongo Central (Mayombe e Schisto-calcaire/karst)", 0.55, 0.50, 1.5, 18.0),
-    "rift": ("Rift Albertino/Kivu (vulcânicas e fraturadas)", 0.45, 0.60, 1.2, 25.0),
-    "cuvette": ("Cuvette Centrale (sedimentar quaternária)", 0.85, 0.50, 4.0, 4.0),
-    "kalahari": ("Planaltos Kalahari/Batéké (areias espessas)", 0.65, 0.90, 2.5, 30.0),
-    "kasai": ("Cráton do Kasai (embasamento cristalino)", 0.30, 0.45, 0.5, 14.0),
-    "katanga": ("Katanga (metassedimentos e dolomitos)", 0.55, 0.50, 1.5, 20.0),
-    "embasamento": ("Embasamento cristalino (norte e leste)", 0.35, 0.50, 0.7, 12.0),
+    "costeira": ("Moanda coastal sedimentary basin", 0.75, 0.70, 3.0, 12.0),
+    "kongo_central": ("Kongo Central (Mayombe and Schisto-calcaire/karst)", 0.55, 0.50, 1.5, 18.0),
+    "rift": ("Albertine/Kivu rift (volcanic and fractured)", 0.45, 0.60, 1.2, 25.0),
+    "cuvette": ("Cuvette Centrale (Quaternary sediments)", 0.85, 0.50, 4.0, 4.0),
+    "kalahari": ("Kalahari/Batéké plateaus (thick sands)", 0.65, 0.90, 2.5, 30.0),
+    "kasai": ("Kasai craton (crystalline basement)", 0.30, 0.45, 0.5, 14.0),
+    "katanga": ("Katanga (metasediments and dolomites)", 0.55, 0.50, 1.5, 20.0),
+    "embasamento": ("Crystalline basement (north and east)", 0.35, 0.50, 0.7, 12.0),
 }
 
 
@@ -606,7 +606,7 @@ def main():
             rv.append({"type": "Feature", "properties": {"name": nm, "kind": "major", "q": MAJOR_RIVERS[nm][0]},
                        "geometry": rnd(gg.simplify(0.01))})
     sb = streams_big.intersection(clipbox).simplify(0.01)
-    rv.append({"type": "Feature", "properties": {"name": "Drenagem derivada do DEM", "kind": "dem"},
+    rv.append({"type": "Feature", "properties": {"name": "DEM-derived drainage", "kind": "dem"},
                "geometry": rnd(sb)})
     (OUT / "rivers.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": rv},
                                                    ensure_ascii=False, separators=(",", ":")))
@@ -621,22 +621,22 @@ def main():
         "zones": {k: v[0] for k, v in ZONES.items()},
         "sources": {
             "real": [
-                "geoBoundaries (gbOpen, OSM): limites das 26 províncias",
-                "Natural Earth 10m: rios principais, estradas, cidades",
-                "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevação, declive, curvatura",
-                "Rede de drenagem e vazão derivadas do DEM (priority-flood + D8, escoamento por Budyko)",
-                f"NOAA GHCN-Daily: normais mensais de chuva e temperatura de {len(ghcn)} estações",
-                f"NASA POWER (MERRA-2, climatologia 2001-2025): {len(stations) - len(ghcn)} pontos em grade de {POWER_STEP}°",
-                "PET por Hargreaves (FAO-56) a partir das temperaturas",
+                "geoBoundaries (gbOpen, OSM): boundaries of the 26 provinces",
+                "Natural Earth 10m: major rivers, roads, cities",
+                "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevation, slope, curvature",
+                "Drainage network and discharge derived from the DEM (priority-flood + D8, Budyko runoff)",
+                f"NOAA GHCN-Daily: monthly rainfall and temperature normals from {len(ghcn)} stations",
+                f"NASA POWER (MERRA-2, 2001-2025 climatology): {len(stations) - len(ghcn)} points on a {POWER_STEP}° grid",
+                "PET by Hargreaves (FAO-56) from temperatures",
             ],
             "synthetic": [
-                "Domínios hidrogeológicos, favorabilidade litológica e vazão por poço (aprox. Africa Groundwater Atlas / MacDonald 2012)",
-                "Permeabilidade do solo por domínio (no lugar do SoilGrids)",
-                "NDVI estimado a partir da chuva (no lugar do Sentinel/MODIS)",
-                "Coeficientes β da regressão de WTD (sem poços de calibração)",
-                "Vazões médias dos grandes rios: valores aproximados de literatura",
-                "Índice populacional por gravidade das cidades (no lugar do WorldPop)",
-                "Turfeiras da Cuvette Centrale: área aproximada",
+                "Hydrogeological domains, lithological favourability and borehole yield (approx. Africa Groundwater Atlas / MacDonald 2012)",
+                "Soil permeability by domain (instead of SoilGrids)",
+                "NDVI estimated from rainfall (instead of Sentinel/MODIS)",
+                "β coefficients of the WTD regression (no calibration wells)",
+                "Mean discharge of major rivers: approximate literature values",
+                "Population index by city gravity model (instead of WorldPop)",
+                "Cuvette Centrale peatlands: approximate extent",
             ],
         },
     }

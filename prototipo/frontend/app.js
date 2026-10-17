@@ -6,25 +6,25 @@
   const M = window.HidroModel;
   const STATIC = window.HIDRO_DATA || null;
   const CLS = {
-    poco_alto: { label: "Poço altamente recomendado", v: "--c-poco-alto" },
-    poco_viavel: { label: "Poço viável", v: "--c-poco-viavel" },
-    rio: { label: "Bombeamento de rio", v: "--c-rio" },
-    inconclusivo: { label: "Inconclusivo (campo)", v: "--c-inconclusivo" },
-    nao_recomendado: { label: "Não recomendado", v: "--c-nao" },
+    poco_alto: { label: "Borehole highly recommended", short: "Borehole (high)", v: "--c-poco-alto" },
+    poco_viavel: { label: "Borehole viable", short: "Borehole viable", v: "--c-poco-viavel" },
+    rio: { label: "River pumping", short: "River", v: "--c-rio" },
+    inconclusivo: { label: "Inconclusive (field study)", short: "Inconclusive", v: "--c-inconclusivo" },
+    nao_recomendado: { label: "Not recommended", short: "Not recommended", v: "--c-nao" },
   };
-  const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const ZONE_TXT = {
-    costeira: "bacia costeira de Moanda", kongo_central: "Kongo Central (Mayombe e calcários)",
-    rift: "rift Albertino/Kivu (vulcânicas)", cuvette: "Cuvette Centrale (sedimentar)",
-    kalahari: "planaltos Kalahari/Batéké (areias)", kasai: "cráton do Kasai (embasamento)",
-    katanga: "Katanga (metassedimentos/dolomitos)", embasamento: "embasamento do norte e leste",
+    costeira: "Moanda coastal basin", kongo_central: "Kongo Central (Mayombe and limestones)",
+    rift: "Albertine/Kivu rift (volcanic)", cuvette: "Cuvette Centrale (sedimentary)",
+    kalahari: "Kalahari/Batéké plateaus (sands)", kasai: "Kasai craton (basement)",
+    katanga: "Katanga (metasediments/dolomites)", embasamento: "northern and eastern basement",
   };
   const PARAM_IDS = ["horizon_months", "start_month", "area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"];
   const $ = (id) => document.getElementById(id);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const usd = (x) => "USD " + Math.round(x).toLocaleString("pt-BR");
+  const usd = (x) => "USD " + Math.round(x).toLocaleString("en-US");
   const pct = (x) => Math.round(100 * x) + "%";
-  const fmt = (x, d = 0) => Number(x).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmt = (x, d = 0) => Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
   const state = { ai: false, layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
                   res: null, overlay: true, opacity: 0.8, base: "road" };
@@ -91,13 +91,13 @@
   function explainJS(c, r, p) {
     const rio = r.rio;
     const t = [
-      `Domínio ${ZONE_TXT[c.zone] || c.zone}. IR = ${fmt(r.IR, 2)} (acima de 0,5 favorece poço).`,
-      `Principal fator a favor: ${r.fator_pos}. Principal limitação: ${r.fator_neg}.`,
-      `Melhor captação superficial: ${rio.name}, a ${fmt(rio.D_km, 1)} km e ${fmt(Math.max(rio.dz, 0))} m de desnível.`,
+      `Domain: ${ZONE_TXT[c.zone] || c.zone}. IR = ${fmt(r.IR, 2)} (above 0.5 favours a borehole).`,
+      `Main factor in favour: ${r.fator_pos}. Main limitation: ${r.fator_neg}.`,
+      `Best surface intake: ${rio.name}, ${fmt(rio.D_km, 1)} km away with ${fmt(Math.max(rio.dz, 0))} m of lift.`,
     ];
-    if (r.turfeira) t.push("Área de turfeiras da Cuvette Centrale: ambientalmente sensível, exige licenciamento cuidadoso.");
-    if (!r.vazao_ok) t.push(`A vazão típica por poço (${fmt(r.vazao_poco_Ls, 1)} L/s) não cobre ${fmt(p.area_ha)} ha nem com ${r.n_pocos} poços.`);
-    t.push("Recomendação preliminar: sondagem e teste de bombeamento antes da obra.");
+    if (r.turfeira) t.push("Cuvette Centrale peatland area: environmentally sensitive, requires careful permitting.");
+    if (!r.vazao_ok) t.push(`The typical borehole yield (${fmt(r.vazao_poco_Ls, 1)} L/s) cannot cover ${fmt(p.area_ha)} ha even with ${r.n_pocos} boreholes.`);
+    t.push("Preliminary recommendation: test drilling and a pumping test before construction.");
     return t.join(" ");
   }
 
@@ -192,7 +192,7 @@
   const azureKey = () => (state.meta && state.meta.map && state.meta.map.azure_maps_key) || "";
   function azureTiles(tileset, pane) {
     return L.tileLayer("https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=" + tileset +
-      "&zoom={z}&x={x}&y={y}&tileSize=256&language=pt-BR&subscription-key=" + encodeURIComponent(azureKey()),
+      "&zoom={z}&x={x}&y={y}&tileSize=256&language=en-US&subscription-key=" + encodeURIComponent(azureKey()),
       { pane, maxZoom: 19, attribution: "© Microsoft Azure Maps, © TomTom" });
   }
   function applyBase() {
@@ -226,7 +226,7 @@
     const prev = state.res;
     state.res = res;
     syncRes();
-    $("stats").textContent = "Carregando grade…";
+    $("stats").textContent = "Loading grid…";
     try {
       const fc = await getJSON(q("api/cells"));
       state.cells = fc.features.map((f) => f.properties);
@@ -239,7 +239,7 @@
       restyle();
     } catch (e) {
       state.res = prev; syncRes();
-      $("stats").textContent = "Erro ao trocar a resolução: " + e.message;
+      $("stats").textContent = "Could not switch resolution: " + e.message;
     }
   }
   function syncRes() {
@@ -250,10 +250,10 @@
     const r = state.resById[id], c = state.cellById[id];
     if (!r) return "";
     const rows = [
-      ["Província", c.dept], ["Aquífero", ZONE_TXT[c.zone] || c.zone], ["Lençol estimado", fmt(r.WTD) + " m"],
-      ["Vazão por poço", fmt(c.yield_Ls, 1) + " L/s"], ["Probabilidade do poço", pct(r.P_poco)], ["Profundidade estimada", fmt(r.H) + " m"],
-      ["Custo do poço", usd(r.C_poco_total)], ["Custo do rio", usd(r.rio ? r.rio.C_total : r.C_rio_total)],
-      ["Fator positivo", r.fator_pos], ["Fator negativo", r.fator_neg],
+      ["Province", c.dept], ["Aquifer", ZONE_TXT[c.zone] || c.zone], ["Estimated water table", fmt(r.WTD) + " m"],
+      ["Borehole yield", fmt(c.yield_Ls, 1) + " L/s"], ["Borehole probability", pct(r.P_poco)], ["Estimated drilling depth", fmt(r.H) + " m"],
+      ["Borehole cost", usd(r.C_poco_total)], ["River cost", usd(r.rio ? r.rio.C_total : r.C_rio_total)],
+      ["Positive factor", r.fator_pos], ["Negative factor", r.fator_neg],
     ];
     return `<div class="tt"><h3>${CLS[r.cls].label}</h3><table>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}</table></div>`;
   }
@@ -275,27 +275,27 @@
   }
 
   // ---------------------------------------------------------------- UI
-  const PEAT_PILL = `<span class="pill"><span class="dot" style="background:transparent;border:1.5px dashed var(--ink)"></span>Turfeiras (área sensível)</span>`;
+  const PEAT_PILL = `<span class="pill"><span class="dot" style="background:transparent;border:1.5px dashed var(--ink)"></span>Peatlands (sensitive area)</span>`;
   function renderLegend() {
     const el = $("legend");
     if (state.layer === "rec") {
       el.innerHTML = Object.values(CLS).map((k) => `<span class="pill"><span class="dot" style="background:${css(k.v)}"></span>${k.label}</span>`).join("");
     } else if (state.layer === "prob") {
-      el.innerHTML = `<strong>Probabilidade de sucesso do poço</strong><div class="ramp" style="background:linear-gradient(90deg,${PROB_STOPS.join(",")})"></div>
-        <div class="ticks"><span>0%</span><span>40%</span><span>80%</span></div><span class="pill"><span class="dot" style="background:${css("--muted")};opacity:.3"></span>rio ou não recomendado</span>`;
+      el.innerHTML = `<strong>Borehole success probability</strong><div class="ramp" style="background:linear-gradient(90deg,${PROB_STOPS.join(",")})"></div>
+        <div class="ticks"><span>0%</span><span>40%</span><span>80%</span></div><span class="pill"><span class="dot" style="background:${css("--muted")};opacity:.3"></span>river or not recommended</span>`;
     } else if (state.layer === "conf") {
-      el.innerHTML = `<strong>Confiança do modelo</strong><div class="ramp" style="background:linear-gradient(90deg,${CONF_STOPS.join(",")})"></div>
-        <div class="ticks"><span>baixa</span><span>alta</span></div><span style="color:var(--muted)">distância às estações e margem do IR</span>`;
+      el.innerHTML = `<strong>Model confidence</strong><div class="ramp" style="background:linear-gradient(90deg,${CONF_STOPS.join(",")})"></div>
+        <div class="ticks"><span>low</span><span>high</span></div><span style="color:var(--muted)">distance to stations and IR margin</span>`;
     } else if (state.layer === "zones") {
       const present = new Set(state.cells.map((c) => c.zone));
-      el.innerHTML = "<strong>Domínio hidrogeológico</strong>" + ZONE_ORDER.filter((z) => present.has(z)).map((z) =>
+      el.innerHTML = "<strong>Hydrogeological domain</strong>" + ZONE_ORDER.filter((z) => present.has(z)).map((z) =>
         `<span class="pill"><span class="dot" style="background:${css("--z-" + z)}"></span>${ZONE_TXT[z]}</span>`).join("") + PEAT_PILL;
     } else if (state.layer === "wtd") {
-      el.innerHTML = `<strong>Profundidade estimada do lençol</strong><div class="ramp" style="background:linear-gradient(90deg,${WTD_STOPS.join(",")})"></div>
-        <div class="ticks"><span>0 m</span><span>${WTD_MAX / 2} m</span><span>${WTD_MAX}+ m</span></div><span style="color:var(--muted)">mais claro = mais raso</span>` + PEAT_PILL;
+      el.innerHTML = `<strong>Estimated water-table depth</strong><div class="ramp" style="background:linear-gradient(90deg,${WTD_STOPS.join(",")})"></div>
+        <div class="ticks"><span>0 m</span><span>${WTD_MAX / 2} m</span><span>${WTD_MAX}+ m</span></div><span style="color:var(--muted)">lighter = shallower</span>` + PEAT_PILL;
     } else {
-      el.innerHTML = `<strong>Vazão típica por poço</strong><div class="ramp" style="background:linear-gradient(90deg,${YIELD_STOPS.join(",")})"></div>
-        <div class="ticks"><span>0</span><span>${YIELD_MAX / 2}</span><span>${YIELD_MAX}+ L/s</span></div><span style="color:var(--muted)">média por domínio (aprox.)</span>` + PEAT_PILL;
+      el.innerHTML = `<strong>Typical borehole yield</strong><div class="ramp" style="background:linear-gradient(90deg,${YIELD_STOPS.join(",")})"></div>
+        <div class="ticks"><span>0</span><span>${YIELD_MAX / 2}</span><span>${YIELD_MAX}+ L/s</span></div><span style="color:var(--muted)">domain average (approx.)</span>` + PEAT_PILL;
     }
   }
 
@@ -303,14 +303,14 @@
     const n = {}; for (const r of state.results) n[r.cls] = (n[r.cls] || 0) + 1;
     const tot = state.results.length;
     const well = (n.poco_alto || 0) + (n.poco_viavel || 0);
-    $("stats").textContent = `${tot} células · poço ${pct(well / tot)} · rio ${pct((n.rio || 0) / tot)} · campo ${pct((n.inconclusivo || 0) / tot)} · nenhum ${pct((n.nao_recomendado || 0) / tot)}`;
+    $("stats").textContent = `${tot} cells · borehole ${pct(well / tot)} · river ${pct((n.rio || 0) / tot)} · field ${pct((n.inconclusivo || 0) / tot)} · none ${pct((n.nao_recomendado || 0) / tot)}`;
   }
 
   function renderDepts() {
     $("dept-body").innerHTML = state.depts.map((d) => {
       const k = CLS[d.classe_dominante];
       return `<tr data-dept="${d.dept}" class="${state.selDept === d.dept ? "sel" : ""}" tabindex="0">
-        <td>${d.dept}</td><td><span class="pill"><span class="dot" style="background:${css(k.v)}"></span>${k.label.replace(" altamente recomendado", " (alto)").replace("Bombeamento de rio", "Rio").replace(" (campo)", "")}</span></td>
+        <td>${d.dept}</td><td><span class="pill"><span class="dot" style="background:${css(k.v)}"></span>${k.short}</span></td>
         <td class="num">${d.pct_poco}%</td><td class="num">${d.P_poco_media === null ? "–" : pct(d.P_poco_media)}</td></tr>`;
     }).join("");
   }
@@ -331,9 +331,9 @@
   function periodTable(c, p) {
     const rows = [6, 12, 24, 60].map((h) => {
       const r = M.evaluate(c, M.params(Object.assign({}, p, { horizon_months: h })));
-      return `<tr${h === p.horizon_months ? ' class="cur"' : ""}><td>${h} meses</td><td class="num">${usd(r.C_poco_total)}</td><td class="num">${usd(r.rio.C_total)}</td><td>${CLS[r.cls].label.replace(" altamente recomendado", " (alto)").replace("Bombeamento de rio", "Rio")}</td></tr>`;
+      return `<tr${h === p.horizon_months ? ' class="cur"' : ""}><td>${h} months</td><td class="num">${usd(r.C_poco_total)}</td><td class="num">${usd(r.rio.C_total)}</td><td>${CLS[r.cls].short}</td></tr>`;
     }).join("");
-    return `<div><h4>Comparativo por período</h4><div class="table-wrap"><table class="period"><thead><tr><th>Horizonte</th><th class="num">Poço</th><th class="num">Rio</th><th>Indicação</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    return `<div><h4>Comparison by period</h4><div class="table-wrap"><table class="period"><thead><tr><th>Horizon</th><th class="num">Borehole</th><th class="num">River</th><th>Recommendation</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
 
   function bar(label, v) {
@@ -344,51 +344,51 @@
     state.selCell = id;
     const el = $("detail");
     let d;
-    try { d = await cellDetail(id); } catch (e) { el.hidden = false; el.innerHTML = `<p>Não foi possível calcular esta célula: ${e.message}</p>`; return; }
+    try { d = await cellDetail(id); } catch (e) { el.hidden = false; el.innerHTML = `<p>Could not compute this cell: ${e.message}</p>`; return; }
     if (state.selCell !== id) return;
     const { cell: c, result: r } = d;
     const rio = r.rio, comp = r.componentes, p = readParams();
     el.hidden = false;
     el.innerHTML = `
-      <header><div><h3>${c.dept}</h3><div class="loc">${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}° · célula ${c.id} · ${ZONE_TXT[c.zone] || c.zone}</div></div>
-        <button type="button" class="close" id="close-detail" aria-label="Fechar">×</button></header>
+      <header><div><h3>${c.dept}</h3><div class="loc">${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}° · cell ${c.id} · ${ZONE_TXT[c.zone] || c.zone}</div></div>
+        <button type="button" class="close" id="close-detail" aria-label="Close">×</button></header>
       <div class="verdict"><span class="dot" style="background:${css(CLS[r.cls].v)}"></span>${CLS[r.cls].label}<span class="big">IR ${fmt(r.IR, 2)}</span></div>
-      ${r.turfeira ? '<div class="warn">Turfeiras da Cuvette Centrale: área ambientalmente sensível.</div>' : ""}
+      ${r.turfeira ? '<div class="warn">Cuvette Centrale peatlands: environmentally sensitive area.</div>' : ""}
       <div class="cols">
-        <div><h4>Poço tubular</h4><dl>
-          <dt>P_poço</dt><dd>${pct(r.P_poco)}</dd><dt>GPI</dt><dd>${fmt(r.GPI, 2)}</dd>
-          <dt>Lençol (WTD)</dt><dd>${fmt(r.WTD)} m</dd><dt>Perfuração H</dt><dd>${fmt(r.H)} m</dd>
-          <dt>Poços</dt><dd>${r.n_pocos} × ${fmt(r.vazao_poco_Ls, 1)} L/s</dd><dt>Recarga R</dt><dd>${fmt(r.R)} mm</dd>
-          <dt>Capex</dt><dd>${usd(r.C_poco)}</dd><dt>Energia</dt><dd>${usd(r.C_poco_op)}</dd></dl></div>
-        <div><h4>Bombeamento de rio</h4><dl>
-          <dt>Fonte</dt><dd>${rio.name}</dd><dt>Distância</dt><dd>${fmt(rio.D_km, 1)} km</dd>
-          <dt>Vazão</dt><dd>${fmt(rio.Q_rio, 1)} m³/s</dd><dt>Desnível Δz</dt><dd>${fmt(Math.max(rio.dz, 0))} m</dd>
-          <dt>H_t</dt><dd>${fmt(rio.H_t)} m</dd><dt>Tubo</dt><dd>${rio.pipe_d_mm} mm</dd>
-          <dt>Capex</dt><dd>${usd(rio.C_capex)}</dd><dt>Energia</dt><dd>${usd(rio.C_bombeamento)}</dd></dl></div>
+        <div><h4>Borehole</h4><dl>
+          <dt>P_borehole</dt><dd>${pct(r.P_poco)}</dd><dt>GPI</dt><dd>${fmt(r.GPI, 2)}</dd>
+          <dt>Water table (WTD)</dt><dd>${fmt(r.WTD)} m</dd><dt>Drilling depth H</dt><dd>${fmt(r.H)} m</dd>
+          <dt>Boreholes</dt><dd>${r.n_pocos} × ${fmt(r.vazao_poco_Ls, 1)} L/s</dd><dt>Recharge R</dt><dd>${fmt(r.R)} mm</dd>
+          <dt>Capex</dt><dd>${usd(r.C_poco)}</dd><dt>Energy</dt><dd>${usd(r.C_poco_op)}</dd></dl></div>
+        <div><h4>River pumping</h4><dl>
+          <dt>Source</dt><dd>${rio.name}</dd><dt>Distance</dt><dd>${fmt(rio.D_km, 1)} km</dd>
+          <dt>Flow</dt><dd>${fmt(rio.Q_rio, 1)} m³/s</dd><dt>Lift Δz</dt><dd>${fmt(Math.max(rio.dz, 0))} m</dd>
+          <dt>H_t</dt><dd>${fmt(rio.H_t)} m</dd><dt>Pipe</dt><dd>${rio.pipe_d_mm} mm</dd>
+          <dt>Capex</dt><dd>${usd(rio.C_capex)}</dd><dt>Energy</dt><dd>${usd(rio.C_bombeamento)}</dd></dl></div>
       </div>
-      <div><h4>Custo total em ${p.horizon_months} meses</h4><dl>
-        <dt>Poço</dt><dd>${usd(r.C_poco_total)}</dd><dt>Rio</dt><dd>${usd(rio.C_total)}</dd></dl></div>
+      <div><h4>Total cost over ${p.horizon_months} months</h4><dl>
+        <dt>Borehole</dt><dd>${usd(r.C_poco_total)}</dd><dt>River</dt><dd>${usd(rio.C_total)}</dd></dl></div>
       ${periodTable(c, p)}
-      <div class="bars"><h4>Componentes do IR</h4>
-        ${bar("A_sub (poço)", comp.A_sub)}${bar("1 − A_sup (rio)", comp.A_sup_inv)}${bar("E_custo", comp.E_custo)}
-        ${bar("R_clima", comp.R_clima)}${bar("A_acesso", comp.A_acesso)}</div>
+      <div class="bars"><h4>IR components</h4>
+        ${bar("A_sub (borehole)", comp.A_sub)}${bar("1 − A_sup (river)", comp.A_sup_inv)}${bar("E_cost", comp.E_custo)}
+        ${bar("R_climate", comp.R_clima)}${bar("A_access", comp.A_acesso)}</div>
       <p class="explain">${d.explanation}</p>
-      ${state.ai ? `<form class="ask" id="ask-form"><h4>Pergunte à IA sobre esta célula</h4>
-        <textarea id="ask-q" rows="2">Por que esta é a recomendação aqui e o que pode mudar com estudo de campo?</textarea>
-        <button type="submit" id="ask-btn">Perguntar ao Claude</button><div class="ask-out" id="ask-out" aria-live="polite"></div></form>` : ""}`;
+      ${state.ai ? `<form class="ask" id="ask-form"><h4>Ask the AI about this cell</h4>
+        <textarea id="ask-q" rows="2">Why is this the recommendation here, and what could change with a field study?</textarea>
+        <button type="submit" id="ask-btn">Ask Claude</button><div class="ask-out" id="ask-out" aria-live="polite"></div></form>` : ""}`;
     if (state.ai) $("ask-form").addEventListener("submit", (e) => { e.preventDefault(); askAI(id); });
     $("close-detail").onclick = () => { el.hidden = true; state.selCell = null; };
   }
 
   async function askAI(id) {
     const out = $("ask-out"), btn = $("ask-btn");
-    btn.disabled = true; out.textContent = "Consultando o Claude…";
+    btn.disabled = true; out.textContent = "Asking Claude…";
     try {
       const r = await getJSON("api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: $("ask-q").value, cell_id: id, params: readParams(), res: state.res }) });
       out.textContent = r.answer;
-      if (r.mode !== "claude") out.textContent = "IA indisponível no momento; trecho mais relevante do plano: " + r.answer;
-    } catch (e) { out.textContent = "Não foi possível consultar a IA: " + e.message; }
+      if (r.mode !== "claude") out.textContent = "AI unavailable right now; most relevant excerpt from the plan: " + r.answer;
+    } catch (e) { out.textContent = "Could not reach the AI: " + e.message; }
     btn.disabled = false;
   }
 
@@ -426,7 +426,7 @@
     clearTimeout(timer);
     timer = setTimeout(async () => {
       const my = ++seq;
-      try { await compute(); } catch (e) { $("stats").textContent = "Erro ao calcular: " + e.message; return; }
+      try { await compute(); } catch (e) { $("stats").textContent = "Calculation error: " + e.message; return; }
       if (my !== seq) return;
       restyle();
       if (state.selCell !== null) openDetail(state.selCell);
@@ -438,14 +438,14 @@
     $("start_month").value = "6";
     let data;
     try { data = await loadData(); } catch (e) {
-      $("stats").textContent = "Não foi possível carregar os dados: " + e.message + ". Verifique se a API está rodando.";
+      $("stats").textContent = "Could not load the data: " + e.message + ". Check that the API is running.";
       return;
     }
     state.meta = data.meta;
     if (!STATIC) { try { state.ai = (await getJSON("api/health")).rag === "claude"; } catch (e) { state.ai = false; } }
     state.cells = data.cells.features.map((f) => f.properties);
     for (const c of state.cells) state.cellById[c.id] = c;
-    $("mode").textContent = STATIC ? "demo estática" : "API FastAPI";
+    $("mode").textContent = STATIC ? "static demo" : "FastAPI";
     $("src-real").textContent = data.meta.sources.real.join("; ") + ".";
     $("src-syn").textContent = data.meta.sources.synthetic.join("; ") + ".";
 
@@ -469,7 +469,7 @@
     const resolutions = (!STATIC && data.meta.resolutions) || {};
     $("res-group").hidden = Object.keys(resolutions).length < 2;
     $("res-seg").innerHTML = Object.entries(resolutions).map(([k, v]) =>
-      `<button type="button" data-res="${k}" role="radio" title="${v.n_cells} células">${v.km} km</button>`).join("");
+      `<button type="button" data-res="${k}" role="radio" title="${v.n_cells} cells">${v.km} km</button>`).join("");
     for (const b of document.querySelectorAll("[data-res]")) b.addEventListener("click", () => setRes(b.dataset.res));
     syncRes();
     setBase(state.base);

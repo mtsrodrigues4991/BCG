@@ -8,6 +8,9 @@ venv/
 # Env / secrets
 .env
 !.env.example
+# credenciais de conta de serviço (Earth Engine / Google Cloud)
+*-key.json
+hackathon-*.json
 
 # Build / cache
 .cache/

@@ -66,8 +66,9 @@ está no painel **Validation** e em [VALIDACAO.md](VALIDACAO.md).
 
 ## Deploy na Azure
 
-O plano do MVP (2 recursos no resource group `SAO-PAULO-team-2`, imagem no Docker Hub, com comandos `docker` e `az`) está no documento
-"Hidro Congo na Azure: plano do MVP para o hackathon".
+No ar em https://ca-hidrocongo.bravegrass-2f493583.germanywestcentral.azurecontainerapps.io
+(Azure Container Apps + Azure Maps no resource group `SAO-PAULO-team-2`, imagem no Docker Hub). A
+arquitetura cloud, os recursos, os segredos e os comandos de deploy estão no [README da raiz](../README.md#5-arquitetura-cloud).
 
 ## Configuração
 

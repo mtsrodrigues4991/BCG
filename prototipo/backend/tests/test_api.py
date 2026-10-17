@@ -26,7 +26,7 @@ def test_recommendations_all_cells():
 def test_point_and_region_and_explain():
     r = client.get("/api/recommendation/point", params={"lat": 0.05, "lon": 18.26}).json()  # Mbandaka
     assert r["cell"]["dept"] == "Équateur"
-    assert "Recomendação preliminar" in r["explanation"]
+    assert "Preliminary recommendation" in r["explanation"]
     assert client.get("/api/recommendation/point", params={"lat": 40, "lon": 0}).status_code == 404
     reg = client.get("/api/regions/Kinshasa").json()
     assert reg["summary"]["dept"] == "Kinshasa" and reg["cells"]

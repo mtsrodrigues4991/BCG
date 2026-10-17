@@ -20,6 +20,15 @@
     katanga: "Katanga (metasediments/dolomites)", embasamento: "northern and eastern basement",
   };
   const PARAM_IDS = ["model_version", "horizon_months", "start_month", "area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"];
+  const MOBILE_MQ = "(max-width: 760px)";
+  const isMobile = () => window.matchMedia(MOBILE_MQ).matches;
+  const mapPad = () => isMobile() ? [96, 16] : [10, 10];
+  const DRC_VIEW = [[-13.959, 11.701], [5.892, 31.777]];
+  const MOBILE_CONGO_ZOOM = 1.25;
+  const worldLandP = fetch("world-land.geojson").then((r) => {
+    if (!r.ok) throw new Error("world-land.geojson");
+    return r.json();
+  });
   const $ = (id) => document.getElementById(id);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const usd = (x) => "USD " + Math.round(x).toLocaleString("en-US");
@@ -28,7 +37,7 @@
 
   const state = { ai: false, layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
                   res: null, overlay: true, opacity: 0.8, base: "relief", tiles: {} };
-  let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, baseLayer, renderer, wpLayer = null, wpOn = false;
+  let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, silLayer, baseLayer, renderer, wpLayer = null, wpOn = false;
   const AQUIFER_LAYERS = ["zones", "wtd", "yield"];
   const ZONE_ORDER = ["cuvette", "kalahari", "kasai", "katanga", "rift", "kongo_central", "embasamento", "costeira"];
   const q = (url) => url + (url.includes("?") ? "&" : "?") + "res=" + encodeURIComponent(state.res);
@@ -141,14 +150,40 @@
   }
 
   // ---------------------------------------------------------------- mapa
-  function initMap(data) {
-    map = L.map("map", { preferCanvas: true, zoomSnap: 1,  // zoom inteiro: blocos do mapa base sem frestas de escala
-    minZoom: 4, maxZoom: 11, attributionControl: true }).setView([-2.9, 23.6], 5);
+  function silStyle() {
+    return { stroke: false, fillColor: css("--map-sil"), fillOpacity: 1 };
+  }
+
+  function fitCongo(bounds) {
+    map.invalidateSize();
+    map.fitBounds(bounds, { padding: mapPad(), animate: false });
+    if (isMobile()) map.setZoom(map.getZoom() + Math.log2(MOBILE_CONGO_ZOOM), { animate: false });
+  }
+
+  function initMapShell() {
+    map = L.map("map", { preferCanvas: true, zoomSnap: isMobile() ? 0 : 1,  // desktop: zoom inteiro p/ blocos do mapa base sem frestas
+    minZoom: 4, maxZoom: 11, attributionControl: true });
+    fitCongo(DRC_VIEW);
+    const pane = map.createPane("worldsil");
+    pane.style.zIndex = 80;
+    pane.style.pointerEvents = "none";
+    const silRenderer = L.canvas({ padding: 1, pane: "worldsil" });
+    worldLandP.then((fc) => {
+      silLayer = L.geoJSON(fc, {
+        pane: "worldsil", renderer: silRenderer, interactive: false,
+        style: silStyle,
+      }).addTo(map);
+    }).catch(() => {});
     map.createPane("basemap").style.zIndex = 150;
     map.createPane("labels").style.zIndex = 450;
     map.getPane("labels").style.pointerEvents = "none";
-    applyBase();
     map.attributionControl.addAttribution("geoBoundaries · Natural Earth · SRTM · NOAA GHCN · NASA POWER");
+    map.getContainer().addEventListener("click", onMapContainerClick, true);
+  }
+
+  function initMap(data) {
+    if (!map) initMapShell();
+    applyBase();
 
     renderer = L.canvas({ padding: 0.3 });
     buildCellLayer(data.cells);
@@ -171,9 +206,39 @@
       L.circleMarker([c.lat, c.lon], { renderer, radius: c.pop > 500000 ? 4.5 : 3, color: css("--ink"), weight: 1, fillColor: css("--land"), fillOpacity: 1, interactive: false }).addTo(cityLayer);
       L.marker([c.lat, c.lon], { interactive: false, icon: L.divIcon({ className: "city-label", html: c.name, iconAnchor: [-6, 14] }) }).addTo(cityLayer);
     }
-    const fit = () => { map.invalidateSize(); map.fitBounds(deptLayer.getBounds(), { padding: [10, 10] }); };
+    const fit = () => fitCongo(deptLayer.getBounds());
     fit();
     setTimeout(fit, 150);
+  }
+
+  function cellIdAt(lat, lon) {
+    const half = Number(state.res || 0.4) / 2 + 1e-9;
+    let best = null, bestD = Infinity;
+    for (const c of state.cells) {
+      const dlat = Math.abs(c.lat - lat), dlon = Math.abs(c.lon - lon);
+      if (dlat <= half && dlon <= half) {
+        const d = dlat + dlon;
+        if (d < bestD) { bestD = d; best = c.id; }
+      }
+    }
+    return best;
+  }
+
+  let lastTap = 0;
+  function onMapContainerClick(e) {
+    if (!isMobile() || !map) return;
+    if (document.querySelector(".app").classList.contains("config-open")) return;
+    if (e.target.closest(".leaflet-control, .legend, .detail, .mhead, .toolbar, .cw-bubble, .cw-panel")) return;
+    const rect = map.getContainer().getBoundingClientRect();
+    const latlng = map.containerPointToLatLng(L.point(e.clientX - rect.left, e.clientY - rect.top));
+    if (!state.overlay) { hideDetail(); return; }
+    const id = cellIdAt(latlng.lat, latlng.lng);
+    const now = Date.now();
+    if (id) {
+      if (now - lastTap < 350 && state.selCell === id) return;
+      lastTap = now;
+      openDetail(id);
+    } else hideDetail();
   }
 
   function buildCellLayer(fc) {
@@ -182,7 +247,10 @@
       renderer, style: cellStyle,
       onEachFeature: (f, layer) => {
         layer.bindTooltip(() => tooltipHTML(f.properties.id), { sticky: true, direction: "top", opacity: 1 });
-        layer.on("click", () => openDetail(f.properties.id));
+        layer.on("click", (ev) => {
+          L.DomEvent.stopPropagation(ev);
+          openDetail(f.properties.id);
+        });
       },
     });
     if (state.overlay) cellLayer.addTo(map);
@@ -238,6 +306,10 @@
   // ---------------------------------------------------------------- sobreposição e resolução
   // barra lateral: recolhe/expande e redimensiona o mapa
   function setSide(open) {
+    if (isMobile()) {
+      document.querySelector(".app").classList.remove("side-collapsed");
+      return;
+    }
     document.querySelector(".app").classList.toggle("side-collapsed", !open);
     const b = $("side-toggle"), label = open ? "Hide sidebar" : "Show sidebar";
     b.setAttribute("aria-expanded", String(open));
@@ -245,6 +317,74 @@
     b.title = label;
     try { localStorage.setItem("hidro-side", open ? "open" : "closed"); } catch (e) {}
     if (map) { map.invalidateSize(); setTimeout(() => map.invalidateSize(), 200); }
+  }
+
+  function setConfig(open) {
+    const app = document.querySelector(".app");
+    app.classList.toggle("config-open", open);
+    document.body.classList.toggle("config-open", open);
+    const btn = $("cfg-toggle");
+    if (btn) {
+      const label = open ? "Close configuration" : "Open configuration";
+      btn.setAttribute("aria-expanded", String(open));
+      btn.setAttribute("aria-label", label);
+      btn.title = open ? "Close configuration" : "Configuration";
+    }
+    const bd = $("cfg-backdrop");
+    if (bd) bd.hidden = !open;
+    const side = $("side");
+    if (side) {
+      if (isMobile()) {
+        side.setAttribute("aria-hidden", String(!open));
+        side.inert = !open;
+      } else {
+        side.removeAttribute("aria-hidden");
+        side.inert = false;
+      }
+    }
+    if (open) {
+      hideDetail();
+      const close = $("cfg-close");
+      if (close) close.focus();
+    }
+  }
+
+  function placeChrome() {
+    const slot = $("cfg-map-slot"), stats = $("stats"), toolbar2 = $("toolbar2"), main = $("toolbar-main");
+    if (!slot || !stats || !toolbar2 || !main) return;
+    if (isMobile()) {
+      slot.append(stats, toolbar2);
+      document.querySelector(".app").classList.remove("side-collapsed");
+      setConfig(document.querySelector(".app").classList.contains("config-open"));
+    } else {
+      setLayersOpen(false);
+      main.append(stats);
+      main.after(toolbar2);
+      setConfig(false);
+    }
+  }
+
+  function hideDetail() {
+    const el = $("detail");
+    state.selCell = null;
+    setDetailExpanded(false);
+    document.body.classList.remove("has-detail");
+    if (!el) return;
+    if (el._sheetDrag) { el.style.transform = ""; el.style.transition = ""; }
+    if (!isMobile()) { el.hidden = true; return; }
+    const done = () => { if (!document.body.classList.contains("has-detail")) el.hidden = true; };
+    el.addEventListener("transitionend", done, { once: true });
+    setTimeout(done, 400);
+  }
+
+  function showDetail() {
+    const el = $("detail");
+    if (!el) return;
+    const already = document.body.classList.contains("has-detail");
+    el.hidden = false;
+    if (!already) document.body.classList.remove("detail-expanded");
+    if (already || !isMobile()) document.body.classList.add("has-detail");
+    else requestAnimationFrame(() => document.body.classList.add("has-detail"));
   }
 
   function setOverlay(on) {
@@ -268,8 +408,7 @@
       state.cells = fc.features.map((f) => f.properties);
       state.cellById = {};
       for (const c of state.cells) state.cellById[c.id] = c;
-      state.selCell = null;
-      $("detail").hidden = true;
+      hideDetail();
       await compute();
       buildCellLayer(fc);
       restyle();
@@ -426,6 +565,7 @@
     selLayer.clearLayers();
     renderDepts();
     if (!state.selDept) return;
+    if (isMobile()) setConfig(false);
     deptLayer.eachLayer((l) => {
       if (l.feature.properties.name === name) {
         L.geoJSON(l.feature, { interactive: false, style: { color: css("--accent"), weight: 3, fill: false } }).addTo(selLayer);
@@ -450,12 +590,14 @@
     state.selCell = id;
     const el = $("detail");
     let d;
-    try { d = await cellDetail(id); } catch (e) { el.hidden = false; el.innerHTML = `<p>Could not compute this cell: ${e.message}</p>`; return; }
+    const body = $("detail-body") || el;
+    try { d = await cellDetail(id); } catch (e) { setConfig(false); showDetail(); body.innerHTML = `<p>Could not compute this cell: ${e.message}</p>`; return; }
     if (state.selCell !== id) return;
     const { cell: c, result: r } = d;
     const rio = r.rio, comp = r.componentes, p = readParams();
-    el.hidden = false;
-    el.innerHTML = `
+    setConfig(false);
+    showDetail();
+    body.innerHTML = `
       <header><div><h3>${c.dept}</h3><div class="loc">${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}° · cell ${c.id} · ${ZONE_TXT[c.zone] || c.zone}</div></div>
         <button type="button" class="close" id="close-detail" aria-label="Close">×</button></header>
       <div class="verdict"><span class="dot" style="background:${css(CLS[r.cls].v)}"></span>${CLS[r.cls].label}<span class="big">IR ${fmt(r.IR, 2)}</span></div>
@@ -483,7 +625,8 @@
         <textarea id="ask-q" rows="2">Why is this the recommendation here, and what could change with a field study?</textarea>
         <button type="submit" id="ask-btn">Ask Claude</button><div class="ask-out" id="ask-out" aria-live="polite"></div></form>` : ""}`;
     if (state.ai) $("ask-form").addEventListener("submit", (e) => { e.preventDefault(); askAI(id); });
-    $("close-detail").onclick = () => { el.hidden = true; state.selCell = null; };
+    const closeBtn = $("close-detail");
+    if (closeBtn) closeBtn.onclick = hideDetail;
   }
 
   async function askAI(id) {
@@ -514,13 +657,28 @@
     }
   }
 
+  function setLayersOpen(open) {
+    const bar = $("toolbar-main"), btn = $("layer-picker");
+    if (bar) bar.classList.toggle("layers-open", open);
+    if (btn) btn.setAttribute("aria-expanded", String(open));
+  }
+
+  function syncLayerPicker() {
+    const val = $("layer-picker-val");
+    const sel = document.querySelector("[data-layer][aria-checked='true']");
+    if (val && sel) val.textContent = sel.textContent.trim();
+  }
+
   function setLayer(name) {
     state.layer = name;
     for (const b of document.querySelectorAll("[data-layer]")) b.setAttribute("aria-checked", b.dataset.layer === name ? "true" : "false");
+    syncLayerPicker();
+    if (isMobile()) setLayersOpen(false);
     restyle();
   }
 
   function restyle() {
+    if (silLayer) silLayer.setStyle(silStyle);
     cellLayer.setStyle(cellStyle);
     riverLayer.setStyle((f) => ({ color: css("--river") }));
     deptLayer.setStyle(() => ({ color: css("--ink") }));
@@ -543,7 +701,82 @@
   }
 
   // controles da interface que não dependem dos dados: ligados antes de carregar a API
+  function setDetailExpanded(on) {
+    document.body.classList.toggle("detail-expanded", on);
+    const handle = $("detail-handle");
+    if (handle) {
+      handle.setAttribute("aria-expanded", String(on));
+      handle.setAttribute("aria-label", on ? "Collapse details" : "Expand details");
+    }
+  }
+
+  function initSheetGestures() {
+    const el = $("detail"), handle = $("detail-handle");
+    if (!el || !handle || handle._sheetDrag) return;
+    handle._sheetDrag = true;
+    let startY = null, dy = 0, dragged = false;
+    handle.addEventListener("touchstart", (e) => {
+      if (!isMobile() || !document.body.classList.contains("has-detail")) return;
+      startY = e.touches[0].clientY;
+      dy = 0;
+      dragged = false;
+      el.style.transition = "none";
+    }, { passive: true });
+    handle.addEventListener("touchmove", (e) => {
+      if (startY == null) return;
+      dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > 8) dragged = true;
+      el.style.transform = "translateY(" + Math.max(-48, dy) + "px)";
+    }, { passive: true });
+    handle.addEventListener("touchend", () => {
+      if (startY == null) return;
+      el.style.transition = "";
+      el.style.transform = "";
+      const expanded = document.body.classList.contains("detail-expanded");
+      if (dy > 90) { if (expanded) setDetailExpanded(false); else hideDetail(); }
+      else if (dy < -50) setDetailExpanded(true);
+      else if (!dragged) setDetailExpanded(!expanded);
+      startY = null;
+    });
+    handle.addEventListener("click", (e) => {
+      if (!isMobile() || dragged) return;
+      e.preventDefault();
+      setDetailExpanded(!document.body.classList.contains("detail-expanded"));
+    });
+  }
+
+  function initMobileChrome() {
+    const mq = window.matchMedia(MOBILE_MQ);
+    const onBreak = () => {
+      placeChrome();
+      if (!mq.matches) setConfig(false);
+      if (map) { map.invalidateSize(); setTimeout(() => map.invalidateSize(), 200); }
+    };
+    (mq.addEventListener ? mq.addEventListener("change", onBreak) : mq.addListener(onBreak));
+    placeChrome();
+    $("cfg-toggle").addEventListener("click", () => setConfig(!document.querySelector(".app").classList.contains("config-open")));
+    $("cfg-close").addEventListener("click", () => setConfig(false));
+    $("cfg-backdrop").addEventListener("click", () => setConfig(false));
+    $("layer-picker").addEventListener("click", (e) => {
+      e.stopPropagation();
+      setLayersOpen(!$("toolbar-main").classList.contains("layers-open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!$("toolbar-main").classList.contains("layers-open")) return;
+      if (e.target.closest("#toolbar-main")) return;
+      setLayersOpen(false);
+    });
+    initSheetGestures();
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if ($("toolbar-main").classList.contains("layers-open")) setLayersOpen(false);
+      else if (document.querySelector(".app").classList.contains("config-open")) setConfig(false);
+      else if (document.body.classList.contains("has-detail")) hideDetail();
+    });
+  }
+
   function initChrome() {
+    initMobileChrome();
     $("side-toggle").addEventListener("click", () => setSide(document.querySelector(".app").classList.contains("side-collapsed")));
     let sideOpen = true;
     try { sideOpen = localStorage.getItem("hidro-side") !== "closed"; } catch (e) {}
@@ -572,6 +805,7 @@
     initChrome();
     $("start_month").innerHTML = MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
     $("start_month").value = "6";
+    initMapShell();
     let data;
     try { data = await loadData(); } catch (e) {
       $("stats").textContent = "Could not load the data: " + e.message + ". Check that the API is running.";

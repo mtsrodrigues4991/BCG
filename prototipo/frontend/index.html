@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <title>Hidro Congo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta charset="utf-8">
@@ -11,106 +11,106 @@
 <link rel="stylesheet" href="ChatWidget.css">
 
 <div class="app">
-  <aside class="side" aria-label="Parâmetros e resumo">
+  <aside class="side" aria-label="Parameters and summary">
     <header class="brand">
       <div>
         <h1>Hidro Congo</h1>
-        <p class="sub">Poço tubular ou bombeamento de rio, região por região da República Democrática do Congo</p>
+        <p class="sub">Borehole or river pumping, region by region across the Democratic Republic of the Congo</p>
       </div>
-      <span class="mode" id="mode" title="Origem dos cálculos">…</span>
+      <span class="mode" id="mode" title="Where the calculations run">…</span>
     </header>
 
     <section class="block">
-      <h2>Horizonte</h2>
-      <div class="seg" role="radiogroup" aria-label="Horizonte de planejamento">
-        <button type="button" id="hz6" data-h="6" role="radio">6 meses</button>
-        <button type="button" id="hz12" data-h="12" role="radio">1 ano</button>
-        <button type="button" id="hzc" data-h="custom" role="radio">Customizado</button>
+      <h2>Horizon</h2>
+      <div class="seg" role="radiogroup" aria-label="Planning horizon">
+        <button type="button" id="hz6" data-h="6" role="radio">6 months</button>
+        <button type="button" id="hz12" data-h="12" role="radio">1 year</button>
+        <button type="button" id="hzc" data-h="custom" role="radio">Custom</button>
       </div>
       <div class="row2">
-        <label for="horizon_months">Meses
+        <label for="horizon_months">Months
           <input id="horizon_months" type="number" min="1" max="60" value="12">
         </label>
-        <label for="start_month">Início
+        <label for="start_month">Start
           <select id="start_month"></select>
         </label>
       </div>
     </section>
 
     <section class="block">
-      <h2>Projeto de irrigação</h2>
-      <label class="slider" for="area_ha">Área irrigada <output id="o_area_ha"></output>
+      <h2>Irrigation project</h2>
+      <label class="slider" for="area_ha">Irrigated area <output id="o_area_ha"></output>
         <input id="area_ha" type="range" min="1" max="100" step="1" value="5">
       </label>
-      <label class="slider" for="c_energia">Custo da energia <output id="o_c_energia"></output>
+      <label class="slider" for="c_energia">Energy cost <output id="o_c_energia"></output>
         <input id="c_energia" type="range" min="0.05" max="0.6" step="0.01" value="0.22">
       </label>
-      <label class="slider" for="WTD_max">Profundidade máx. viável (WTD_max) <output id="o_WTD_max"></output>
+      <label class="slider" for="WTD_max">Max. viable depth (WTD_max) <output id="o_WTD_max"></output>
         <input id="WTD_max" type="range" min="20" max="150" step="5" value="60">
       </label>
-      <label class="slider" for="D_max_km">Distância máx. ao rio (D_max) <output id="o_D_max_km"></output>
+      <label class="slider" for="D_max_km">Max. distance to river (D_max) <output id="o_D_max_km"></output>
         <input id="D_max_km" type="range" min="2" max="40" step="1" value="15">
       </label>
     </section>
 
     <details class="block" id="weights">
-      <summary><h2>Pesos do índice IR</h2></summary>
-      <label class="slider" for="w1">w₁ adequação do poço <output id="o_w1"></output><input id="w1" type="range" min="0" max="1" step="0.05" value="0.3"></label>
-      <label class="slider" for="w2">w₂ inadequação do rio <output id="o_w2"></output><input id="w2" type="range" min="0" max="1" step="0.05" value="0.25"></label>
-      <label class="slider" for="w3">w₃ eficiência de custo <output id="o_w3"></output><input id="w3" type="range" min="0" max="1" step="0.05" value="0.25"></label>
-      <label class="slider" for="w4">w₄ confiabilidade climática <output id="o_w4"></output><input id="w4" type="range" min="0" max="1" step="0.05" value="0.1"></label>
-      <label class="slider" for="w5">w₅ acessibilidade <output id="o_w5"></output><input id="w5" type="range" min="0" max="1" step="0.05" value="0.1"></label>
-      <button type="button" class="link" id="reset">Restaurar padrões</button>
+      <summary><h2>IR index weights</h2></summary>
+      <label class="slider" for="w1">w₁ borehole suitability <output id="o_w1"></output><input id="w1" type="range" min="0" max="1" step="0.05" value="0.3"></label>
+      <label class="slider" for="w2">w₂ river unsuitability <output id="o_w2"></output><input id="w2" type="range" min="0" max="1" step="0.05" value="0.25"></label>
+      <label class="slider" for="w3">w₃ cost efficiency <output id="o_w3"></output><input id="w3" type="range" min="0" max="1" step="0.05" value="0.25"></label>
+      <label class="slider" for="w4">w₄ climate reliability <output id="o_w4"></output><input id="w4" type="range" min="0" max="1" step="0.05" value="0.1"></label>
+      <label class="slider" for="w5">w₅ accessibility <output id="o_w5"></output><input id="w5" type="range" min="0" max="1" step="0.05" value="0.1"></label>
+      <button type="button" class="link" id="reset">Reset defaults</button>
     </details>
 
     <section class="block">
-      <h2>Províncias</h2>
+      <h2>Provinces</h2>
       <div class="table-wrap">
         <table class="depts">
-          <thead><tr><th>Província</th><th>Indicação</th><th class="num">% poço</th><th class="num">P média</th></tr></thead>
+          <thead><tr><th>Province</th><th>Recommendation</th><th class="num">% borehole</th><th class="num">Mean P</th></tr></thead>
           <tbody id="dept-body"></tbody>
         </table>
       </div>
     </section>
 
     <section class="block sources">
-      <h2>Dados</h2>
-      <p><strong>Reais:</strong> <span id="src-real"></span></p>
-      <p><strong>Sintéticos:</strong> <span id="src-syn"></span></p>
+      <h2>Data</h2>
+      <p><strong>Real:</strong> <span id="src-real"></span></p>
+      <p><strong>Synthetic:</strong> <span id="src-syn"></span></p>
     </section>
   </aside>
 
   <main class="mapcol">
     <div class="mhead" aria-hidden="true">Hidro Congo</div>
     <div class="toolbar">
-      <div class="tgroup" role="radiogroup" aria-label="Camada do mapa">
-        <span class="tlabel">Análise</span>
-        <button type="button" id="ly-rec" data-layer="rec" role="radio">Recomendação</button>
-        <button type="button" id="ly-prob" data-layer="prob" role="radio">Probabilidade do poço</button>
-        <button type="button" id="ly-conf" data-layer="conf" role="radio">Confiança</button>
-        <span class="tlabel">Aquíferos</span>
-        <button type="button" id="ly-zones" data-layer="zones" role="radio">Zonas</button>
-        <button type="button" id="ly-wtd" data-layer="wtd" role="radio">Profundidade do lençol</button>
-        <button type="button" id="ly-yield" data-layer="yield" role="radio">Vazão por poço</button>
+      <div class="tgroup" role="radiogroup" aria-label="Map layer">
+        <span class="tlabel">Analysis</span>
+        <button type="button" id="ly-rec" data-layer="rec" role="radio">Recommendation</button>
+        <button type="button" id="ly-prob" data-layer="prob" role="radio">Borehole probability</button>
+        <button type="button" id="ly-conf" data-layer="conf" role="radio">Confidence</button>
+        <span class="tlabel">Aquifers</span>
+        <button type="button" id="ly-zones" data-layer="zones" role="radio">Zones</button>
+        <button type="button" id="ly-wtd" data-layer="wtd" role="radio">Water-table depth</button>
+        <button type="button" id="ly-yield" data-layer="yield" role="radio">Borehole yield</button>
       </div>
       <span class="stats" id="stats"></span>
     </div>
     <div class="toolbar toolbar2">
-      <label class="chk" for="overlay"><input type="checkbox" id="overlay" checked> Sobreposição</label>
-      <label class="op" for="opacity">Opacidade <input type="range" id="opacity" min="0.2" max="1" step="0.05" value="0.8"></label>
+      <label class="chk" for="overlay"><input type="checkbox" id="overlay" checked> Overlay</label>
+      <label class="op" for="opacity">Opacity <input type="range" id="opacity" min="0.2" max="1" step="0.05" value="0.8"></label>
       <span class="tgroup" id="base-group">
-        <span class="tlabel">Mapa base</span>
-        <span class="mini-seg" role="radiogroup" aria-label="Mapa base">
-          <button type="button" data-base="road" role="radio">Ruas</button><button type="button" data-base="imagery" role="radio">Satélite</button>
+        <span class="tlabel">Basemap</span>
+        <span class="mini-seg" role="radiogroup" aria-label="Basemap">
+          <button type="button" data-base="road" role="radio">Roads</button><button type="button" data-base="imagery" role="radio">Satellite</button>
         </span>
-        <span class="hint-key" id="base-hint" hidden>defina AZURE_MAPS_KEY</span>
+        <span class="hint-key" id="base-hint" hidden>set AZURE_MAPS_KEY</span>
       </span>
       <span class="tgroup" id="res-group">
-        <span class="tlabel">Resolução</span>
-        <span class="mini-seg" role="radiogroup" aria-label="Resolução da grade" id="res-seg"></span>
+        <span class="tlabel">Resolution</span>
+        <span class="mini-seg" role="radiogroup" aria-label="Grid resolution" id="res-seg"></span>
       </span>
     </div>
-    <div id="map" aria-label="Mapa da República Democrática do Congo"></div>
+    <div id="map" aria-label="Map of the Democratic Republic of the Congo"></div>
     <div class="legend" id="legend"></div>
     <section class="detail" id="detail" hidden aria-live="polite"></section>
   </main>

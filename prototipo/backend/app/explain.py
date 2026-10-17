@@ -11,10 +11,14 @@ CLS_TXT = {
     "nao_recomendado": "nenhuma das duas opções é recomendada",
 }
 ZONE_TXT = {
-    "costeira": "bacia sedimentar costeira", "mayombe": "cadeia do Mayombe (rocha cristalina fraturada)",
-    "niari": "vale do Niari (calcários com possível carste)", "chaillu": "maciço do Chaillu (embasamento cristalino)",
-    "bateke": "planaltos Batéké (areias espessas, lençol profundo nos topos)",
-    "cuvette": "bacia sedimentar da Cuvette", "noroeste": "embasamento cristalino do noroeste",
+    "costeira": "bacia sedimentar costeira de Moanda",
+    "kongo_central": "Kongo Central (Mayombe cristalino e calcários do Schisto-calcaire, com possível carste)",
+    "rift": "rift Albertino/Kivu (rochas vulcânicas e fraturadas, alta variabilidade)",
+    "cuvette": "bacia sedimentar da Cuvette Centrale (lençol raso)",
+    "kalahari": "planaltos Kalahari/Batéké (areias espessas, lençol profundo nos topos)",
+    "kasai": "cráton do Kasai (embasamento cristalino)",
+    "katanga": "Katanga (metassedimentos e dolomitos, possível carste)",
+    "embasamento": "embasamento cristalino do norte e leste",
 }
 
 
@@ -25,7 +29,7 @@ def usd(x: float) -> str:
 def explain(c: dict, r: dict, p: Params) -> str:
     rio = r["rio"]
     parts = [
-        f"Célula em {c['dept']} ({c['lat']:.2f}, {c['lon']:.2f}), domínio {ZONE_TXT[c['zone']]}.",
+        f"Célula em {c['dept']} ({c['lat']:.2f}, {c['lon']:.2f}), domínio {ZONE_TXT.get(c['zone'], c['zone'])}.",
         f"Resultado: {CLS_TXT[r['cls']]} (IR = {r['IR']:.2f}; acima de 0,5 favorece poço).",
         f"Poço: probabilidade de sucesso {100 * r['P_poco']:.0f}%, lençol estimado a {r['WTD']:.0f} m, "
         f"perfuração de {r['H']:.0f} m, {r['n_pocos']} poço(s) para {p.area_ha:g} ha, "
@@ -35,7 +39,7 @@ def explain(c: dict, r: dict, p: Params) -> str:
         f"Principal fator a favor: {r['fator_pos']}. Principal limitação: {r['fator_neg']}.",
     ]
     if r["turfeira"]:
-        parts.append("Atenção: área de turfeiras da Cuvette, ambientalmente sensível; "
+        parts.append("Atenção: área de turfeiras da Cuvette Centrale, ambientalmente sensível; "
                      "drenagem e perfuração exigem licenciamento cuidadoso.")
     if not r["vazao_ok"]:
         parts.append("A vazão típica por poço neste domínio não cobre a demanda mesmo com o número máximo de poços.")

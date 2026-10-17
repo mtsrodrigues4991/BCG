@@ -14,9 +14,10 @@
   };
   const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   const ZONE_TXT = {
-    costeira: "bacia sedimentar costeira", mayombe: "Mayombe (cristalino fraturado)",
-    niari: "vale do Niari (calcários)", chaillu: "maciço do Chaillu (embasamento)",
-    bateke: "planaltos Batéké (areias)", cuvette: "bacia sedimentar da Cuvette", noroeste: "embasamento do noroeste",
+    costeira: "bacia costeira de Moanda", kongo_central: "Kongo Central (Mayombe e calcários)",
+    rift: "rift Albertino/Kivu (vulcânicas)", cuvette: "Cuvette Centrale (sedimentar)",
+    kalahari: "planaltos Kalahari/Batéké (areias)", kasai: "cráton do Kasai (embasamento)",
+    katanga: "Katanga (metassedimentos/dolomitos)", embasamento: "embasamento do norte e leste",
   };
   const PARAM_IDS = ["horizon_months", "start_month", "area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"];
   const $ = (id) => document.getElementById(id);
@@ -84,11 +85,11 @@
   function explainJS(c, r, p) {
     const rio = r.rio;
     const t = [
-      `Domínio ${ZONE_TXT[c.zone]}. IR = ${fmt(r.IR, 2)} (acima de 0,5 favorece poço).`,
+      `Domínio ${ZONE_TXT[c.zone] || c.zone}. IR = ${fmt(r.IR, 2)} (acima de 0,5 favorece poço).`,
       `Principal fator a favor: ${r.fator_pos}. Principal limitação: ${r.fator_neg}.`,
       `Melhor captação superficial: ${rio.name}, a ${fmt(rio.D_km, 1)} km e ${fmt(Math.max(rio.dz, 0))} m de desnível.`,
     ];
-    if (r.turfeira) t.push("Área de turfeiras da Cuvette: ambientalmente sensível, exige licenciamento cuidadoso.");
+    if (r.turfeira) t.push("Área de turfeiras da Cuvette Centrale: ambientalmente sensível, exige licenciamento cuidadoso.");
     if (!r.vazao_ok) t.push(`A vazão típica por poço (${fmt(r.vazao_poco_Ls, 1)} L/s) não cobre ${fmt(p.area_ha)} ha nem com ${r.n_pocos} poços.`);
     t.push("Recomendação preliminar: sondagem e teste de bombeamento antes da obra.");
     return t.join(" ");
@@ -120,7 +121,7 @@
 
   // ---------------------------------------------------------------- mapa
   function initMap(data) {
-    map = L.map("map", { preferCanvas: true, zoomSnap: 0.25, minZoom: 5, maxZoom: 11, attributionControl: true }).setView([-0.7, 15.0], 6);
+    map = L.map("map", { preferCanvas: true, zoomSnap: 0.25, minZoom: 4, maxZoom: 11, attributionControl: true }).setView([-2.9, 23.6], 5);
     const prov = (data.meta.map || {}).provider;
     const key = (data.meta.map || {}).azure_maps_key;
     if (!STATIC && prov === "osm") {
@@ -129,7 +130,7 @@
       L.tileLayer("https://atlas.microsoft.com/map/tile?api-version=2.0&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=" + key,
         { attribution: "© Microsoft Azure Maps", opacity: 0.6 }).addTo(map);
     }
-    map.attributionControl.addAttribution("Natural Earth · SRTM · NOAA GHCN");
+    map.attributionControl.addAttribution("geoBoundaries · Natural Earth · SRTM · NOAA GHCN · NASA POWER");
 
     const renderer = L.canvas({ padding: 0.3 });
     cellLayer = L.geoJSON(data.cells, {
@@ -166,7 +167,7 @@
     const r = state.resById[id], c = state.cellById[id];
     if (!r) return "";
     const rows = [
-      ["Departamento", c.dept], ["Probabilidade do poço", pct(r.P_poco)], ["Profundidade estimada", fmt(r.H) + " m"],
+      ["Província", c.dept], ["Probabilidade do poço", pct(r.P_poco)], ["Profundidade estimada", fmt(r.H) + " m"],
       ["Custo do poço", usd(r.C_poco_total)], ["Custo do rio", usd(r.rio ? r.rio.C_total : r.C_rio_total)],
       ["Fator positivo", r.fator_pos], ["Fator negativo", r.fator_neg],
     ];
@@ -184,7 +185,7 @@
     if (state.layer !== "prob") return;
     for (const d of state.depts) {
       const at = deptCentroid(d.dept);
-      if (!at || d.P_poco_media === null || d.dept === "Brazzaville" || d.dept === "Pointe-Noire") continue;
+      if (!at || d.P_poco_media === null || d.dept === "Kinshasa") continue;
       L.marker(at, { interactive: false, icon: L.divIcon({ className: "city-label", html: `<span style="font-size:14px">${d.dept} ${pct(d.P_poco_media)}</span>`, iconAnchor: [30, 8] }) }).addTo(deptLabels);
     }
   }
@@ -254,10 +255,10 @@
     const rio = r.rio, comp = r.componentes, p = readParams();
     el.hidden = false;
     el.innerHTML = `
-      <header><div><h3>${c.dept}</h3><div class="loc">${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}° · célula ${c.id} · ${ZONE_TXT[c.zone]}</div></div>
+      <header><div><h3>${c.dept}</h3><div class="loc">${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}° · célula ${c.id} · ${ZONE_TXT[c.zone] || c.zone}</div></div>
         <button type="button" class="close" id="close-detail" aria-label="Fechar">×</button></header>
       <div class="verdict"><span class="dot" style="background:${css(CLS[r.cls].v)}"></span>${CLS[r.cls].label}<span class="big">IR ${fmt(r.IR, 2)}</span></div>
-      ${r.turfeira ? '<div class="warn">Turfeiras da Cuvette: área ambientalmente sensível.</div>' : ""}
+      ${r.turfeira ? '<div class="warn">Turfeiras da Cuvette Centrale: área ambientalmente sensível.</div>' : ""}
       <div class="cols">
         <div><h4>Poço tubular</h4><dl>
           <dt>P_poço</dt><dd>${pct(r.P_poco)}</dd><dt>GPI</dt><dd>${fmt(r.GPI, 2)}</dd>

@@ -38,7 +38,7 @@
   panel.hidden = true;
   panel.innerHTML =
     '<header class="cw-head"><div><strong>Assistente hídrico</strong>' +
-    '<span>Clima, hidrogeologia e legislação do Congo, com fontes da web</span></div>' +
+    '<span>Clima, hidrogeologia e legislação da RDC, com fontes da web</span></div>' +
     '<button type="button" class="cw-close" aria-label="Fechar">' + ICON_CLOSE + "</button></header>" +
     '<div class="cw-msgs" aria-live="polite"></div>' +
     '<form class="cw-form"><textarea rows="1" placeholder="Escreva sua pergunta…" aria-label="Mensagem" maxlength="4000"></textarea>' +
@@ -119,7 +119,7 @@
     bubble.classList.toggle("cw-open", open);
     if (open) {
       if (!msgs.childElementCount)
-        addMsg("assistant", "Olá! Pergunte sobre chuvas, aquíferos, poços ou legislação da água na República do Congo. Eu pesquiso na web e cito as fontes.");
+        addMsg("assistant", "Olá! Pergunte sobre chuvas, aquíferos, poços ou legislação da água na República Democrática do Congo (RDC). Eu pesquiso na web e cito as fontes.");
       input.focus();
     } else bubble.focus();
   }

@@ -5,9 +5,9 @@ Endpoints principais:
   GET  /api/meta                      parâmetros padrão, pesos AHP, fontes de dados
   GET  /api/cells                     geometria + covariáveis das células (GeoJSON)
   GET  /api/layers/{nome}             departments | rivers | cities | stations
-  POST /api/recommendations           resultados de todas as células + resumo por departamento
+  POST /api/recommendations           resultados de todas as células + resumo por província
   GET  /api/recommendation/point      recomendação para uma coordenada (lat, lon)
-  GET  /api/regions/{dept}            resumo e células de um departamento
+  GET  /api/regions/{dept}            resumo e células de uma província
   POST /api/cells/{id}/evaluate       detalhe completo de uma célula com parâmetros
   GET  /api/explain/{cell_id}         explicação em linguagem natural
   POST /api/ask                       perguntas à IA (Claude) sobre o plano e, opcionalmente, uma célula
@@ -37,7 +37,7 @@ DATA = Path(os.environ.get("HIDRO_DATA", BASE / "data"))
 FRONTEND = Path(os.environ.get("HIDRO_FRONTEND", BASE / "frontend"))
 
 app = FastAPI(title="Hidro Congo API", version="0.1.0",
-              description="Recomendação de poço tubular x bombeamento de rio na República do Congo")
+              description="Recomendação de poço tubular x bombeamento de rio na República Democrática do Congo")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(chat_router)
 
@@ -117,7 +117,7 @@ def nearest_cell(lat: float, lon: float) -> dict:
     best = min(cells(), key=lambda c: (c["lat"] - lat) ** 2 + ((c["lon"] - lon) * math.cos(math.radians(lat))) ** 2)
     d = math.hypot((best["lat"] - lat) * 110.57, (best["lon"] - lon) * 111.32 * math.cos(math.radians(lat)))
     if d > 30:
-        raise HTTPException(404, "coordenada fora da área do Congo coberta pela grade")
+        raise HTTPException(404, "coordenada fora da área da RDC coberta pela grade")
     return best
 
 
@@ -134,7 +134,7 @@ def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: f
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
     sel = [c for c in cells() if dept in c["depts"]]
     if not sel:
-        raise HTTPException(404, f"departamento '{dept}' não encontrado")
+        raise HTTPException(404, f"província '{dept}' não encontrada")
     res = [evaluate(c, p) for c in sel]
     summary = next(s for s in summarize(sel, res) if s["dept"] == dept)
     return _round({"summary": summary, "cells": [{k: r[k] for k in SLIM} for r in res]})
@@ -174,7 +174,7 @@ def cell_context(cell_id: int, params: dict) -> dict:
     r = evaluate(c, p)
     keep = ("cls", "IR", "P_poco", "GPI", "WTD", "H", "n_pocos", "C_poco_total", "A_sub", "A_sup",
             "E_custo", "R_clima_poco", "R_clima_rio", "A_acesso", "fator_pos", "fator_neg", "turfeira")
-    return _round({"departamento": c["dept"], "lat": c["lat"], "lon": c["lon"], "zona": c["zone"],
+    return _round({"provincia": c["dept"], "lat": c["lat"], "lon": c["lon"], "zona": c["zone"],
                    "chuva_mm_ano": c["P"], "horizonte_meses": p.horizon_months, "area_ha": p.area_ha,
                    "resultado": {k: r[k] for k in keep},
                    "rio": {k: r["rio"][k] for k in ("name", "D_km", "Q_rio", "dz", "C_total")},

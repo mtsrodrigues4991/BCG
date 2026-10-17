@@ -1,8 +1,8 @@
-# Plano de Arquitetura — Sistema de Inteligência Geoespacial para Acesso à Água na República do Congo
+# Plano de Arquitetura — Sistema de Inteligência Geoespacial para Acesso à Água na República Democrática do Congo
 
 ## 1. Visão geral
 
-A República do Congo possui a segunda maior bacia hidrográfica do mundo — a Bacia do Congo —, com extensos rios e aquíferos, mas a água não chega de forma distribuída às áreas agrícolas. A agricultura local depende fortemente da chuva (sequeiro), o que limita a produtividade e aumenta a vulnerabilidade à seca.
+A República Democrática do Congo (RDC) ocupa a maior parte da Bacia do Congo, a segunda maior bacia hidrográfica do mundo, com extensos rios e aquíferos, mas a água não chega de forma distribuída às áreas agrícolas. A agricultura local depende fortemente da chuva (sequeiro), o que limita a produtividade e aumenta a vulnerabilidade à seca.
 
 Este projeto propõe um **software de inteligência geoespacial** que recomenda, para cada região do país, a melhor estratégia de acesso à água:
 
@@ -22,7 +22,7 @@ A recomendação leva em conta dados geográficos, climáticos, hidrológicos, d
 ### Escopo inicial
 
 - Dois tipos de recomendação: **poço tubular** e **bombeamento de rio**.
-- Região de foco: **República do Congo** (Congo-Brazzaville).
+- Região de foco: **República Democrática do Congo** (RDC, Congo-Kinshasa), 26 províncias.
 - Horizontes: 6 meses, 1 ano e customizável.
 - Visualização em mapa por regiões, com percentual de probabilidade para poços.
 
@@ -39,7 +39,7 @@ A recomendação leva em conta dados geográficos, climáticos, hidrológicos, d
 | **IGRAC — GGIS** | Metadados, poços e polígonos de aquíferos | Variável | Aberto (registro em alguns casos) | https://www.un-igrac.org/global-groundwater-information-system-ggis |
 | **GRACE / GRACE-FO** | Anomalias de armazenamento subterrâneo (proxy indireto) | ~300 km | Aberto | https://grace.jpl.nasa.gov/ |
 
-> A Bacia da Cuvette (norte do Congo) possui aquíferos sedimentares e turfeiras de grande interesse. A região de Pointe-Noire (sul) apresenta aquíferos em ambientes fraturados.
+> A Cuvette Centrale (centro-oeste da RDC) possui aquíferos sedimentares rasos e as maiores turfeiras tropicais do mundo, ambientalmente sensíveis. Os planaltos Kalahari/Batéké (Kinshasa, Kwango, Kwilu) têm areias espessas com lençol profundo; o Kongo Central e o Katanga têm calcários e dolomitos com possível carste; o embasamento cristalino (Kasai, norte e leste) e o rift do Kivu apresentam aquíferos fraturados de vazão baixa e variável.
 
 ### 2.2 Hidrografia superficial (rios, bacias, vazão)
 
@@ -47,7 +47,7 @@ A recomendação leva em conta dados geográficos, climáticos, hidrológicos, d
 |---|---|---|---|---|
 | **HydroSHEDS** | Rede de drenagem, direção de fluxo, bacias, acumulação | 3 a 30 arc-seconds (~90 m a 1 km) | Aberto | https://www.hydrosheds.org/ |
 | **GRDC** | Séries temporais de vazão in situ | Diária / mensal (por estação) | Aberto para pesquisa (cadastro) | https://grdc.bafg.de/ |
-| **OpenStreetMap / Geofabrik** | Rios, lagos, represas (vetorial) | Vetorial, atualizado diariamente | ODbL | https://download.geofabrik.de/africa/congo-brazzaville.html |
+| **OpenStreetMap / Geofabrik** | Rios, lagos, represas (vetorial) | Vetorial, atualizado diariamente | ODbL | https://download.geofabrik.de/africa/congo-democratic-republic.html |
 | **WRI Aqueduct 4.0** | Indicadores de risco hídrico, escassez, estresse | ~5 arc-minutos (~10 km) | CC BY 4.0 | https://github.com/wri/Aqueduct40 |
 
 ### 2.3 Clima, precipitação e umidade
@@ -74,7 +74,7 @@ A recomendação leva em conta dados geográficos, climáticos, hidrológicos, d
 |---|---|---|---|---|
 | **WorldPop** | Densidade populacional | 100 m | CC BY 4.0 | https://www.worldpop.org/ |
 | **GHSL (JRC/Copernicus)** | Assentamentos, população, construções | 38 m a 1 km | Uso livre com atribuição | https://ghsl.jrc.ec.europa.eu/ |
-| **OpenStreetMap / Geofabrik** | Estradas, cidades, mercados, infraestrutura | Vetorial | ODbL | https://download.geofabrik.de/africa/congo-brazzaville.html |
+| **OpenStreetMap / Geofabrik** | Estradas, cidades, mercados, infraestrutura | Vetorial | ODbL | https://download.geofabrik.de/africa/congo-democratic-republic.html |
 | **SRTM / NASADEM** | Modelo digital de elevação (DEM) | 1 arc-second (~30 m) | Aberto | https://lpdaac.usgs.gov/products/nasadem_hgtv001/ |
 
 ### 2.6 Dados complementares
@@ -82,7 +82,7 @@ A recomendação leva em conta dados geográficos, climáticos, hidrológicos, d
 | Fonte | Dado | Licença | URL |
 |---|---|---|---|
 | **World Bank Open Data** | Recursos hídricos internos renováveis, indicadores socioeconômicos | CC BY 4.0 | https://data.worldbank.org/indicator/ER.H2O.INTR.K3?locations=CG |
-| **Artigos técnicos** | Hidrogeologia da Bacia da Cuvette, prospecção em Pointe-Noire | Variável | Ver referências na seção 7 |
+| **Artigos técnicos** | Hidrogeologia da Cuvette Centrale e de ambientes fraturados (inclui estudos da vizinha República do Congo como análogos) | Variável | Ver referências na seção 7 |
 
 ---
 
@@ -142,7 +142,7 @@ Onde `R_sup` é o escoamento superficial e `ΔS` a variação de armazenamento n
 R = α · P
 ```
 
-Onde `α` é o coeficiente de recarga. Para a região tropical úmida do Congo, valores típicos podem variar entre **0,15 e 0,35**, dependendo do solo, litologia e cobertura vegetal.
+Onde `α` é o coeficiente de recarga. Para a região tropical úmida da RDC, valores típicos podem variar entre **0,15 e 0,35**, dependendo do solo, litologia e cobertura vegetal.
 
 #### Índice de aridez
 
@@ -346,7 +346,7 @@ Usuário (governo, ONG, empresa)
 
 | Caso de uso | Benefício do RAG |
 |---|---|
-| **Consulta a documentos técnicos** | Responder perguntas sobre hidrogeologia do Congo, critérios de perfuração, legislação ambiental |
+| **Consulta a documentos técnicos** | Responder perguntas sobre hidrogeologia da RDC, critérios de perfuração, legislação ambiental |
 | **Geração de relatórios** | Criar resumos de viabilidade em linguagem natural a partir dos dados calculados |
 | **Suporte ao tomador de decisão** | Explicar por que uma região foi recomendada como "poço" ou "rio" |
 | **Atualização contínua** | Ingerir novos artigos, relatórios de campo e normas sem re-treinar modelo |
@@ -361,13 +361,13 @@ Usuário (governo, ONG, empresa)
 #### Exemplo de fluxo RAG
 
 ```
-Usuário: "Quais as restrições ambientais para perfuração de poços no departamento de Cuvette?"
+Usuário: "Quais as restrições ambientais para perfuração de poços na província de Équateur?"
         │
         ▼
 Azure AI Search recupera trechos de legislação + artigos técnicos
         │
         ▼
-Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Recomenda-se ..."
+Azure OpenAI gera resposta: "Em Équateur, na Cuvette Centrale, as turfeiras são áreas sensíveis. Recomenda-se ..."
 ```
 
 #### Limitações e cuidados
@@ -382,7 +382,7 @@ Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Re
 
 ### 5.1 Mapa de recomendação por regiões
 
-- A área do Congo é dividida em células (ex: 1 km × 1 km ou por divisão administrativa).
+- A área da RDC é dividida em células (ex: 1 km × 1 km ou por divisão administrativa).
 - Cada célula recebe uma cor indicando a recomendação:
   - **Verde escuro**: poço altamente recomendado
   - **Verde claro**: poço viável
@@ -443,7 +443,7 @@ Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Re
 
 ### Fase 1 — Fundação (semanas 1 a 3)
 
-- [ ] Definir AOI (Área de Interesse) piloto no Congo (sugestão: departamentos da Cuvette ou Pool).
+- [ ] Definir AOI (Área de Interesse) piloto na RDC (sugestão: províncias de Kinshasa e Kongo Central).
 - [ ] Baixar e catalogar datasets prioritários: SRTM, HydroSHEDS, CHIRPS, SoilGrids, OSM.
 - [ ] Montar ambiente Azure: PostgreSQL + PostGIS, Data Lake, Container Apps.
 - [ ] Criar pipeline de ETL inicial para raster e vetores.
@@ -469,7 +469,7 @@ Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Re
 
 ### Fase 5 — Escala (após o hackaton)
 
-- [ ] Expandir para outros departamentos do Congo.
+- [ ] Expandir para as demais províncias da RDC.
 - [ ] Integrar dados de sensores e cadastro colaborativo de poços.
 - [ ] Evoluir modelo com machine learning supervisionado.
 
@@ -490,12 +490,12 @@ Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Re
 
 ## 9. Referências técnicas selecionadas
 
-1. **Mouakoumbat, N. J. L. et al.** Hydrogeological characterization and approach to a conceptual model of the aquifer of the Cuvette Basin, Republic of Congo. *International Journal of Geosciences*, 2022.
-2. **Dinga, J. B. et al.** Contribution of Remote Sensing to Groundwater Prospecting in Fractured Environments: The Case of Pointe-Noire. *Journal of Water Resource and Protection*, 2026.
+1. **Mouakoumbat, N. J. L. et al.** Hydrogeological characterization and approach to a conceptual model of the aquifer of the Cuvette Basin, Republic of Congo. *International Journal of Geosciences*, 2022. (República do Congo; análogo para a Cuvette Centrale da RDC.)
+2. **Dinga, J. B. et al.** Contribution of Remote Sensing to Groundwater Prospecting in Fractured Environments: The Case of Pointe-Noire. *Journal of Water Resource and Protection*, 2026. (República do Congo; análogo para aquíferos fraturados.)
 3. **Tshimanga, R. M. et al.** A Catchment Information System to Advance Systems-Based Management of Large Tropical River Basins. *Research Square*, 2026.
 4. **Tshimanga, R. M. et al.** Congo basin peatlands as coupled human–natural systems. *Royal Society Publishing*, 2026.
 5. **MacDonald, A. M. et al.** Quantitative maps of groundwater resources in Africa. *Environmental Research Letters*, 2012.
-6. **British Geological Survey.** Africa Groundwater Atlas. https://www.bgs.ac.uk/africagroundwateratlas/
+6. **British Geological Survey.** Africa Groundwater Atlas, incluindo a página de hidrogeologia da República Democrática do Congo. https://www.bgs.ac.uk/africagroundwateratlas/
 7. **HydroSHEDS.** https://www.hydrosheds.org/
 8. **CHIRPS.** https://www.chc.ucsb.edu/data/chirps
 9. **SoilGrids.** https://soilgrids.org/
@@ -505,7 +505,7 @@ Azure OpenAI gera resposta: "Na Cuvette, as turfeiras são áreas sensíveis. Re
 
 ## 10. Resumo executivo para o pitch
 
-**Problema**: A República do Congo tem água, mas não infraestrutura para levá-la à agricultura. A maioria dos plantios depende da chuva.
+**Problema**: A República Democrática do Congo tem água, mas não infraestrutura para levá-la à agricultura. A maioria dos plantios depende da chuva.
 
 **Solução**: Software geoespacial que recomenda, região a região, se o melhor caminho é **perfurar um poço** ou **bombar água de um rio**, com cálculos de probabilidade, profundidade, vazão e custo.
 

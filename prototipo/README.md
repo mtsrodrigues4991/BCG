@@ -1,10 +1,10 @@
 # Hidro Congo — protótipo
 
 Protótipo do hackathon que implementa o [plano de arquitetura](../plano_arquitetura.md): para cada
-região da República do Congo, recomenda **poço tubular** ou **bombeamento de rio**, com probabilidade
+província da República Democrática do Congo (RDC), recomenda **poço tubular** ou **bombeamento de rio**, com probabilidade
 de sucesso do poço, profundidade, custo e os fatores que pesaram na decisão.
 
-O país é dividido em **761 células de 0,2° (~22 km)**, agregadas nos **12 departamentos**.
+O país é dividido em **1.245 células de 0,4° (~44 km)**, agregadas nas **26 províncias**.
 
 ## Como rodar
 
@@ -84,10 +84,10 @@ frontend/                  Leaflet + JS puro (mesmo modelo em model.js para a de
 | GET | `/api/meta` | parâmetros padrão, pesos AHP e CR, fontes de dados |
 | GET | `/api/cells` | células (GeoJSON) com covariáveis |
 | GET | `/api/layers/{departments,rivers,cities,stations}` | camadas de apoio |
-| POST | `/api/recommendations` | `{"params": {...}}` → resultado de todas as células + resumo por departamento |
+| POST | `/api/recommendations` | `{"params": {...}}` → resultado de todas as células + resumo por província |
 | POST | `/api/cells/{id}/evaluate` | detalhe completo de uma célula |
 | GET | `/api/recommendation/point?lat=&lon=` | recomendação por coordenada |
-| GET | `/api/regions/{dept}` | resumo e células de um departamento |
+| GET | `/api/regions/{dept}` | resumo e células de uma província (ex.: `Kinshasa`, `Équateur`) |
 | GET | `/api/explain/{id}` | texto explicativo |
 | POST | `/api/ask` | `{"question": "...", "cell_id": 10, "params": {...}}` → resposta do Claude com trechos do plano e, se `cell_id` vier, os números da célula |
 | POST | `/api/chat` | `{"message": "...", "history": [{"role": "user", "content": "..."}]}` → resposta do assistente com busca web e `sources` (usado pelo widget de chat) |
@@ -100,21 +100,28 @@ Parâmetros aceitos em `params`: `horizon_months` (6, 12 ou qualquer valor de 1 
 ## Dados: o que é real e o que é sintético
 
 **Reais (abertos):**
-- Natural Earth 10m: departamentos, rios principais, estradas e cidades.
-- AWS Terrain Tiles (Terrarium, derivado de SRTM/NASADEM), ~1,2 km: elevação, declive, curvatura.
+- geoBoundaries (gbOpen COD ADM1, derivado do OSM): limites das 26 províncias atuais. O Natural Earth
+  ainda traz as 11 províncias anteriores à reforma de 2015.
+- Natural Earth 10m: rios principais, estradas e cidades.
+- AWS Terrain Tiles (Terrarium, derivado de SRTM/NASADEM), ~2,4 km: elevação, declive, curvatura.
 - Rede de drenagem e vazão **derivadas do DEM** (priority-flood + D8, como no HydroSHEDS), com escoamento
   por Budyko (w = 3,5, calibrado para ~350–400 mm/ano observados na bacia do Congo).
-- NOAA GHCN-Daily: normais mensais de chuva e temperatura de 25 estações do Congo e vizinhos;
-  PET por Hargreaves (FAO-56); interpolação IDW.
+- NOAA GHCN-Daily: normais mensais de chuva e temperatura de 22 estações da RDC e vizinhos.
+- NASA POWER (climatologia MERRA-2 2001–2025): 102 pontos em grade de 1,5°, que cobrem as
+  lacunas do GHCN na RDC. PET por Hargreaves (FAO-56); interpolação IDW das duas fontes. A confiança
+  da recomendação usa a distância à estação GHCN (medida) mais próxima.
 
 **Sintéticos (marcados no app e em `data/meta.json`):**
-- Domínios hidrogeológicos (costeira, Mayombe, Niari, Chaillu, Batéké, Cuvette, noroeste), com
+- Domínios hidrogeológicos (costeira de Moanda, Kongo Central, rift Albertino/Kivu, Cuvette Centrale,
+  Kalahari/Batéké, cráton do Kasai, Katanga, embasamento do norte e leste), definidos por regras
+  lat/lon, com
   favorabilidade, permeabilidade do solo e vazão típica por poço, aproximados a partir do Africa
   Groundwater Atlas / MacDonald et al. (2012).
 - NDVI estimado pela chuva; índice populacional por gravidade das cidades.
 - Coeficientes β da regressão de WTD (não há poços de calibração).
-- Vazões médias dos grandes rios (Congo, Ubangi, Sangha, Kouilou…): valores aproximados de literatura.
-- Área das turfeiras da Cuvette/Likouala.
+- Vazões médias dos grandes rios (Congo, Kasai, Ubangi, Lualaba, Lomami…): ordens de grandeza de
+  literatura, a conferir no GRDC.
+- Área das turfeiras da Cuvette Centrale (baixadas da bacia entre 16,5–21,5°E e 2,5°S–2,5°N).
 
 Hosts como CHIRPS, SoilGrids, HydroSHEDS, WorldClim e OSM/Overpass não estavam acessíveis no ambiente
 de construção. A troca é localizada em `build_data.py`: cada covariável sintética tem um ponto único
@@ -135,8 +142,8 @@ de cálculo.
 - **GPI**: 7 fatores com pesos por AHP (autovetor principal; CR = 0,016 < 0,1).
 - **Classes do mapa**: vermelho quando `max(A_sub, A_sup) < 0,12`; amarelo quando `|IR − 0,5| < 0,03`;
   verde-escuro quando poço e `P_poço ≥ 45%`.
-- O polígono "Brazzaville" do Natural Earth (~6.000 km²) inclui parte do Pool; o pipeline mantém só a
-  comuna (~15 km do centro) e devolve o resto ao Pool.
+- **Grade de 0,4°**: a RDC tem ~7× a área da República do Congo; 0,4° mantém o mapa e o pipeline
+  com o mesmo peso da versão de 0,2° para Brazzaville.
 
 ## Limitações
 

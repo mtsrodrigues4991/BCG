@@ -16,25 +16,25 @@ def test_health_and_meta():
 def test_recommendations_all_cells():
     r = client.post("/api/recommendations", json={"params": {"horizon_months": 6}}).json()
     assert r["params"]["horizon_months"] == 6
-    assert len(r["results"]) > 700
+    assert len(r["results"]) > 1000
     classes = {x["cls"] for x in r["results"]}
     assert classes <= {"poco_alto", "poco_viavel", "rio", "inconclusivo", "nao_recomendado"}
     assert all(0 <= x["P_poco"] <= 1 for x in r["results"])
-    assert len(r["departments"]) == 12
+    assert len(r["departments"]) == 26  # províncias da RDC
 
 
 def test_point_and_region_and_explain():
-    r = client.get("/api/recommendation/point", params={"lat": 1.62, "lon": 18.05}).json()  # Impfondo
-    assert r["cell"]["dept"] == "Likouala"
+    r = client.get("/api/recommendation/point", params={"lat": 0.05, "lon": 18.26}).json()  # Mbandaka
+    assert r["cell"]["dept"] == "Équateur"
     assert "Recomendação preliminar" in r["explanation"]
     assert client.get("/api/recommendation/point", params={"lat": 40, "lon": 0}).status_code == 404
-    reg = client.get("/api/regions/Cuvette").json()
-    assert reg["summary"]["dept"] == "Cuvette" and reg["cells"]
+    reg = client.get("/api/regions/Kinshasa").json()
+    assert reg["summary"]["dept"] == "Kinshasa" and reg["cells"]
     assert client.get("/api/explain/0").json()["text"]
 
 
 def test_ask_extractive():
-    r = client.post("/api/ask", json={"question": "turfeiras na Cuvette"}).json()
+    r = client.post("/api/ask", json={"question": "turfeiras na Cuvette Centrale"}).json()
     assert r["sources"] and r["mode"] in ("extrativo", "azure_openai")
 
 

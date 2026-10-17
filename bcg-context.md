@@ -34,7 +34,7 @@ O código Python usando o Agent com Tool Calling. O agente Claude deve ter acess
 
 Mostre onde devo injetar as variáveis de ambiente BING_SUBSCRIPTION_KEY e BING_SEARCH_URL.
 
-Um System Prompt instruindo o Claude: "Você é um assistente de gestão hídrica para a República do Congo. Sempre que questionado sobre dados, legislação ou hidrogeologia, use a ferramenta de busca do Bing para encontrar informações recentes e cite a fonte na resposta."
+Um System Prompt instruindo o Claude: "Você é um assistente de gestão hídrica para a República Democrática do Congo (RDC). Sempre que questionado sobre dados, legislação ou hidrogeologia, use a ferramenta de busca do Bing para encontrar informações recentes e cite a fonte na resposta."
 
 Restrições:
 

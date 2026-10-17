@@ -54,7 +54,7 @@ def ahp_weights(matrix=AHP_MATRIX, iters=100):
 @dataclass
 class Params:
     horizon_months: int = 12        # 6, 12 ou customizado
-    start_month: int = 6            # 1..12 (junho = início da estação seca no sul)
+    start_month: int = 6            # 1..12 (junho = início da estação seca no sul da RDC)
     area_ha: float = 5.0            # área irrigada
     irrigation_mm_day: float = 5.0  # lâmina de pico
     hours_per_day: float = 8.0      # horas de bombeamento por dia
@@ -249,7 +249,7 @@ def evaluate(c: dict, p: Params) -> dict:
 
 
 def summarize(cells: list[dict], results: list[dict]) -> list[dict]:
-    """Agrega resultados por departamento (uma célula pode tocar mais de um)."""
+    """Agrega resultados por província (uma célula pode tocar mais de um)."""
     by = {}
     for c, r in zip(cells, results):
         for d in c["depts"]:

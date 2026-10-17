@@ -1,28 +1,31 @@
 {
-  "cell_deg": 0.2,
+  "cell_deg": 0.4,
   "bbox": [
-    10.5,
-    -6.0,
-    19.5,
-    4.5
+    12.0,
+    -13.6,
+    31.4,
+    5.5
   ],
-  "n_cells": 761,
+  "n_cells": 1245,
   "zones": {
-    "costeira": "Bacia sedimentar costeira",
-    "mayombe": "Mayombe (cristalino fraturado)",
-    "niari": "Vale do Niari (calcários/karst)",
-    "chaillu": "Maciço do Chaillu (embasamento)",
-    "bateke": "Planaltos Batéké (areias)",
-    "cuvette": "Bacia da Cuvette (sedimentar quaternária)",
-    "noroeste": "Embasamento do noroeste"
+    "costeira": "Bacia sedimentar costeira (Moanda)",
+    "kongo_central": "Kongo Central (Mayombe e Schisto-calcaire/karst)",
+    "rift": "Rift Albertino/Kivu (vulcânicas e fraturadas)",
+    "cuvette": "Cuvette Centrale (sedimentar quaternária)",
+    "kalahari": "Planaltos Kalahari/Batéké (areias espessas)",
+    "kasai": "Cráton do Kasai (embasamento cristalino)",
+    "katanga": "Katanga (metassedimentos e dolomitos)",
+    "embasamento": "Embasamento cristalino (norte e leste)"
   },
   "sources": {
     "real": [
-      "Natural Earth 10m: departamentos, rios principais, estradas, cidades",
+      "geoBoundaries (gbOpen, OSM): limites das 26 províncias",
+      "Natural Earth 10m: rios principais, estradas, cidades",
       "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevação, declive, curvatura",
       "Rede de drenagem e vazão derivadas do DEM (priority-flood + D8, escoamento por Budyko)",
-      "NOAA GHCN-Daily: normais mensais de chuva e temperatura de 25 estações",
-      "PET por Hargreaves (FAO-56) a partir das temperaturas das estações"
+      "NOAA GHCN-Daily: normais mensais de chuva e temperatura de 22 estações",
+      "NASA POWER (MERRA-2, climatologia 2001-2025): 102 pontos em grade de 1.5°",
+      "PET por Hargreaves (FAO-56) a partir das temperaturas"
     ],
     "synthetic": [
       "Domínios hidrogeológicos, favorabilidade litológica e vazão por poço (aprox. Africa Groundwater Atlas / MacDonald 2012)",
@@ -31,7 +34,7 @@
       "Coeficientes β da regressão de WTD (sem poços de calibração)",
       "Vazões médias dos grandes rios: valores aproximados de literatura",
       "Índice populacional por gravidade das cidades (no lugar do WorldPop)",
-      "Turfeiras da Cuvette/Likouala: área aproximada"
+      "Turfeiras da Cuvette Centrale: área aproximada"
     ]
   }
 }

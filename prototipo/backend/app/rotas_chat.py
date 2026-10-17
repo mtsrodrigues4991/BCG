@@ -28,7 +28,7 @@ BING_SUBSCRIPTION_KEY = os.environ.get("BING_SUBSCRIPTION_KEY", "")
 BING_SEARCH_URL = os.environ.get("BING_SEARCH_URL", "https://api.bing.microsoft.com/v7.0/search")
 
 SYSTEM = (
-    "Você é um assistente de gestão hídrica para a República do Congo. Sempre que questionado sobre dados, "
+    "Você é um assistente de gestão hídrica para a República Democrática do Congo (RDC). Sempre que questionado sobre dados, "
     "legislação ou hidrogeologia, use a ferramenta de busca do Bing para encontrar informações recentes e "
     "cite a fonte na resposta. Responda em português, de forma objetiva, e termine listando as URLs usadas."
 )
@@ -59,7 +59,7 @@ def bing_search(query: str, count: int = 5) -> list[dict]:
 BING_TOOL = {
     "name": "bing_search",
     "description": "Pesquisa na web (Bing) e devolve título, URL e trecho dos resultados. Use para dados, "
-                   "clima, hidrogeologia e legislação recentes da República do Congo.",
+                   "clima, hidrogeologia e legislação recentes da República Democrática do Congo (RDC).",
     "strict": True,
     "input_schema": {"type": "object", "properties": {"query": {"type": "string", "description": "termos da busca"}},
                      "required": ["query"], "additionalProperties": False},

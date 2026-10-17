@@ -3,12 +3,16 @@
 Baixa dados abertos leves, deriva covariáveis por célula da grade e grava os
 arquivos que a API e o frontend consomem em ../data/.
 
+Região: República Democrática do Congo (RDC).
+
 Fontes reais:
-  * Natural Earth 10m (limites dos departamentos, rios principais, estradas,
-    cidades, lagos)                     -> github.com/nvkelso/natural-earth-vector
+  * geoBoundaries (gbOpen COD ADM1, OSM) -> limites das 26 províncias
+  * Natural Earth 10m (rios principais, estradas, cidades, contorno dos países)
+                                         -> github.com/nvkelso/natural-earth-vector
   * AWS Terrain Tiles (Terrarium, derivado de SRTM/NASADEM) -> elevação, declive,
     curvatura e rede de drenagem derivada (D8 + priority-flood, estilo HydroSHEDS)
-  * NOAA GHCN-Daily (estações do Congo e vizinhos) -> normais mensais de
+  * NOAA GHCN-Daily (estações da RDC e vizinhos) + NASA POWER (climatologia
+    2001-2025 em grade de 1,5°, cobre as lacunas do GHCN) -> normais mensais de
     precipitação e temperatura (PET por Hargreaves)
 
 Covariáveis sintéticas (marcadas em meta.json): domínios hidrogeológicos,
@@ -43,22 +47,37 @@ CACHE = Path(os.environ.get("HIDRO_CACHE", ROOT / ".cache"))
 NE_BASE = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/"
 TERRARIUM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 GHCN = "https://noaa-ghcn-pds.s3.amazonaws.com/"
+GB_ADM1 = ("https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/COD/ADM1/"
+           "geoBoundaries-COD-ADM1_simplified.geojson")
+POWER = ("https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=PRECTOTCORR,T2M,T2M_RANGE"
+         "&community=AG&longitude={lon}&latitude={lat}&format=JSON")
+POWER_STEP = 1.5        # espaçamento da grade de pseudo-estações NASA POWER (graus)
+# geoBoundaries mistura nomes em inglês e francês; usamos os nomes oficiais (francês)
+PROV_NAMES = {"Lower Uele": "Bas-Uele", "Upper Uele": "Haut-Uele", "North Kivu": "Nord-Kivu",
+              "South Kivu": "Sud-Kivu", "Central Kasai": "Kasaï-Central", "Kasai": "Kasaï",
+              "Kasai-Oriental": "Kasaï-Oriental"}
 
 # Área de processamento (um pouco maior que o país para não truncar bacias)
-BBOX = (10.5, -6.0, 19.5, 4.5)
-CELL_DEG = 0.2          # ~22 km
-DEM_ZOOM = 7            # ~1,2 km por pixel
+BBOX = (12.0, -13.6, 31.4, 5.5)
+CELL_DEG = 0.4          # ~44 km
+DEM_ZOOM = 6            # ~2,4 km por pixel
 STREAM_MIN_KM2 = 50     # limiar de drenagem (densidade / distância à drenagem)
 RIVER_MIN_KM2 = 500     # limiar de "rio bombeável" derivado do DEM
 BUDYKO_W = 3.5          # calibrado para escoamento ~350-400 mm/ano na bacia do Congo
 
-# Vazões médias anuais aproximadas (m³/s), valores de literatura (GRDC / ORE-HYBAM).
+# Vazões médias anuais aproximadas (m³/s), ordens de grandeza de literatura (GRDC /
+# ORE-HYBAM / SO-HYBAM); conferir no GRDC antes de usar fora do protótipo.
 # Regime: amortecimento da sazonalidade (0 = constante, 1 = segue a chuva local).
+# Nomes como aparecem no Natural Earth (rivers_lake_centerlines) dentro da RDC.
 MAJOR_RIVERS = {
-    "Congo": (40500, 0.25), "Ubangi": (4000, 0.5), "Sangha": (1600, 0.45),
-    "Kouilou": (900, 0.6), "Niari": (450, 0.65), "Alima": (600, 0.4),
-    "Lobaye": (300, 0.6), "Dja": (400, 0.55), "Kadéï": (300, 0.6),
-    "Inkisi": (250, 0.6), "Kasai": (9900, 0.35), "Ogooué": (4700, 0.5),
+    "Congo": (41000, 0.25), "Lualaba": (3500, 0.4), "Kasai": (9900, 0.35), "Ubangi": (4000, 0.5),
+    "Ruki": (3500, 0.3), "Busira": (1800, 0.35), "Tshuapa": (800, 0.4), "Lomami": (900, 0.45),
+    "Sankuru": (1800, 0.45), "Lukenie": (600, 0.45), "Fimi": (1200, 0.35), "Kwango": (2700, 0.45),
+    "Kwilu": (900, 0.5), "Lua": (200, 0.55), "Aruwimi": (2000, 0.4), "Ituri": (500, 0.5),
+    "Uele": (1200, 0.55), "Kibali": (300, 0.6), "Bomu": (800, 0.6), "Mongala": (800, 0.45),
+    "Lokoro": (400, 0.45), "Ebola": (200, 0.5), "Luvua": (650, 0.35), "Luapula": (700, 0.35),
+    "Lufira": (150, 0.65), "Lukuga": (200, 0.2), "Rusizi": (230, 0.3), "Semliki": (120, 0.3),
+    "Inkisi": (250, 0.6),
 }
 
 M_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -90,7 +109,7 @@ def km_per_deg(lat: float) -> tuple[float, float]:
 
 
 def to_local_km(geom, lat0: float):
-    """Projeção equiretangular simples centrada no país (erro < 1% aqui)."""
+    """Projeção equiretangular simples centrada em lat0 (use a latitude local)."""
     from shapely.affinity import scale
     kx, ky = km_per_deg(lat0)
     return scale(geom, xfact=kx, yfact=ky, origin=(0, 0))
@@ -216,12 +235,12 @@ def ra_mm_day(lat_deg, month):
     return ra * 0.408
 
 
-def load_stations():
+def load_stations(region):
     txt = fetch(GHCN + "ghcnd-stations.txt", "ghcnd-stations.txt").decode()
     out = []
     for line in txt.splitlines():
         lat, lon = float(line[12:20]), float(line[21:30])
-        if BBOX[1] - 0.5 <= lat <= BBOX[3] + 0.5 and BBOX[0] - 0.5 <= lon <= BBOX[2] + 0.5:
+        if region.contains(Point(lon, lat)):
             sid = line[:11]
             try:
                 raw = fetch(GHCN + f"csv/by_station/{sid}.csv", f"ghcn_{sid}.csv").decode()
@@ -238,7 +257,7 @@ def load_stations():
                 if len(v) >= 25:  # mês quase completo
                     mo = int(ym[4:]) - 1
                     prcp[mo].append(sum(v) / len(v) * M_DAYS[mo])
-            if min(len(p) for p in prcp) < 8:
+            if min(len(p) for p in prcp) < 5:  # cobertura do GHCN na RDC é rala
                 continue
             tx = [[] for _ in range(12)]
             tn = [[] for _ in range(12)]
@@ -256,7 +275,35 @@ def load_stations():
                 st["tmax"] = [float(np.mean(t)) for t in tx]
                 st["tmin"] = [float(np.mean(t)) for t in tn]
             out.append(st)
-    log(len(out), "estações com normais válidas")
+    log(len(out), "estações GHCN com normais válidas")
+    return out
+
+
+def load_power(region, step=POWER_STEP):
+    """Pseudo-estações NASA POWER (climatologia MERRA-2 2001-2025) numa grade regular."""
+    out = []
+    for lat in np.arange(BBOX[1] + step / 2, BBOX[3], step):
+        for lon in np.arange(BBOX[0] + step / 2, BBOX[2], step):
+            lat, lon = round(float(lat), 2), round(float(lon), 2)
+            if not region.contains(Point(lon, lat)):
+                continue
+            try:
+                d = json.loads(fetch(POWER.format(lon=lon, lat=lat), f"power_{lon}_{lat}.json"))
+            except Exception as e:
+                log("POWER falhou", lon, lat, e)
+                continue
+            par = d["properties"]["parameter"]
+            mo = list(par["T2M"])[:12]  # JAN..DEC
+            t, rg = [par["T2M"][m] for m in mo], [par["T2M_RANGE"][m] for m in mo]
+            out.append({
+                "id": f"POWER_{lon}_{lat}", "name": f"NASA POWER {lat:.1f}, {lon:.1f}", "lat": lat, "lon": lon,
+                "elev": float(d["geometry"]["coordinates"][2]), "n_months": 300,
+                "prcp": [round(par["PRECTOTCORR"][m] * M_DAYS[i], 1) for i, m in enumerate(mo)],
+                "tmax": [a + b / 2 for a, b in zip(t, rg)], "tmin": [a - b / 2 for a, b in zip(t, rg)],
+            })
+    if not out:
+        log("AVISO: NASA POWER indisponível; usando só o GHCN")
+    log(len(out), "pseudo-estações NASA POWER")
     return out
 
 
@@ -294,57 +341,52 @@ def budyko_et(p, pet, w=BUDYKO_W):
 
 
 # ----------------------------------------------------------------------------
-# Domínios hidrogeológicos (SINTÉTICO, aproximação a partir do Africa
-# Groundwater Atlas / MacDonald et al. 2012 e literatura da Cuvette/Pointe-Noire)
+# Domínios hidrogeológicos da RDC (SINTÉTICO: regras lat/lon aproximando o mapa
+# de produtividade de aquíferos do BGS Africa Groundwater Atlas / MacDonald et al. 2012)
 # ----------------------------------------------------------------------------
 ZONES = {
-    # nome: (favorabilidade litológica, permeabilidade do solo, vazão por poço L/s, WTD base m)
-    "costeira": ("Bacia sedimentar costeira", 0.75, 0.70, 3.0, 12.0),
-    "mayombe": ("Mayombe (cristalino fraturado)", 0.30, 0.45, 0.5, 15.0),
-    "niari": ("Vale do Niari (calcários/karst)", 0.60, 0.55, 2.0, 18.0),
-    "chaillu": ("Maciço do Chaillu (embasamento)", 0.30, 0.45, 0.5, 14.0),
-    "bateke": ("Planaltos Batéké (areias)", 0.65, 0.90, 2.5, 30.0),
-    "cuvette": ("Bacia da Cuvette (sedimentar quaternária)", 0.85, 0.50, 4.0, 4.0),
-    "noroeste": ("Embasamento do noroeste", 0.35, 0.50, 0.7, 12.0),
+    # nome: (rótulo, favorabilidade litológica, permeabilidade do solo, vazão por poço L/s, WTD base m)
+    "costeira": ("Bacia sedimentar costeira (Moanda)", 0.75, 0.70, 3.0, 12.0),
+    "kongo_central": ("Kongo Central (Mayombe e Schisto-calcaire/karst)", 0.55, 0.50, 1.5, 18.0),
+    "rift": ("Rift Albertino/Kivu (vulcânicas e fraturadas)", 0.45, 0.60, 1.2, 25.0),
+    "cuvette": ("Cuvette Centrale (sedimentar quaternária)", 0.85, 0.50, 4.0, 4.0),
+    "kalahari": ("Planaltos Kalahari/Batéké (areias espessas)", 0.65, 0.90, 2.5, 30.0),
+    "kasai": ("Cráton do Kasai (embasamento cristalino)", 0.30, 0.45, 0.5, 14.0),
+    "katanga": ("Katanga (metassedimentos e dolomitos)", 0.55, 0.50, 1.5, 20.0),
+    "embasamento": ("Embasamento cristalino (norte e leste)", 0.35, 0.50, 0.7, 12.0),
 }
 
 
 def zone_of(lon, lat, dist_ocean_km):
-    if dist_ocean_km < 45:
+    if dist_ocean_km < 40:
         return "costeira"
-    if dist_ocean_km < 95 and lat < -2.4:
-        return "mayombe"
-    if 12.6 <= lon <= 14.4 and -4.8 <= lat <= -3.45:
-        return "niari"
-    if lon < 14.1 and -3.45 < lat <= -1.4:
-        return "chaillu"
-    if 14.1 <= lon <= 16.4 and -4.9 <= lat <= -1.4:
-        return "bateke"
-    if lon < 14.9 + max(0.0, lat) * 0.25 and lat > -1.4:
-        return "noroeste"
-    return "cuvette"
+    if lon < 15.2 and lat < -4.0:
+        return "kongo_central"
+    if lon >= 28.0 and lat > -9.0:
+        return "rift"
+    if ((lon - 21.5) / 5.5) ** 2 + ((lat + 0.5) / 3.5) ** 2 <= 1:
+        return "cuvette"
+    if lat < -3.0 and 15.2 <= lon < 22.5:
+        return "kalahari"
+    if lat < -4.0 and 22.5 <= lon < 25.5:
+        return "kasai"
+    if lat < -6.5 and lon >= 25.5:
+        return "katanga"
+    return "embasamento"
 
 
 # ----------------------------------------------------------------------------
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
-    log("1/6 limites e camadas vetoriais (Natural Earth)")
-    adm1 = [f for f in ne("ne_10m_admin_1_states_provinces")["features"]
-            if f["properties"].get("adm0_a3") == "COG"]
+    log("1/6 limites (geoBoundaries) e camadas vetoriais (Natural Earth)")
+    adm1 = json.loads(fetch(GB_ADM1, "geoBoundaries-COD-ADM1_simplified.geojson"))["features"]
     depts = []
     for f in adm1:
-        g = shape(f["geometry"]).buffer(0)
-        depts.append((f["properties"]["name"].replace("Pointe Noire", "Pointe-Noire"), g))
-    # O polígono "Brazzaville" do Natural Earth (~6.000 km²) inclui parte do Pool.
-    # Mantemos a comuna (~15 km ao redor do centro) e devolvemos o resto ao Pool.
-    dd = dict(depts)
-    bzv_city = Point(15.27, -4.26).buffer(0.14).intersection(dd["Brazzaville"])
-    dd["Pool"] = dd["Pool"].union(dd["Brazzaville"].difference(bzv_city)).buffer(0)
-    dd["Brazzaville"] = bzv_city
-    depts = list(dd.items())
+        nm = f["properties"]["shapeName"]
+        depts.append((PROV_NAMES.get(nm, nm), shape(f["geometry"]).buffer(0)))
+    depts.sort()
     country = unary_union([g for _, g in depts])
-    lat0 = country.centroid.y
 
     countries = ne("ne_10m_admin_0_countries")["features"]
     land = unary_union([shape(f["geometry"]).buffer(0) for f in countries
@@ -363,13 +405,15 @@ def main():
              if shape(f["geometry"]).intersects(bb)]
     places = [f for f in ne("ne_10m_populated_places_simple")["features"]
               if shape(f["geometry"]).intersects(bb)]
-    cities = [{"name": f["properties"]["name"].replace("Loubomo", "Dolisie"),
+    cities = [{"name": f["properties"]["name"],
                "pop": int(f["properties"]["pop_max"]),
                "lon": f["geometry"]["coordinates"][0], "lat": f["geometry"]["coordinates"][1],
                "country": f["properties"]["adm0_a3"]} for f in places]
 
-    log("2/6 normais climáticas (GHCN-Daily)")
-    stations = load_stations()
+    log("2/6 normais climáticas (GHCN-Daily + NASA POWER)")
+    region = country.buffer(1.0)
+    ghcn = load_stations(region)
+    stations = ghcn + load_power(country.buffer(0.5))
 
     log("3/6 DEM (Terrarium/SRTM)")
     dem, lons, lats = load_dem()
@@ -405,7 +449,6 @@ def main():
     spix = np.argwhere((acc >= STREAM_MIN_KM2) & ~ocean)
     sp_lon, sp_lat = lons[spix[:, 1]], lats[spix[:, 0]]
     sp_z = dem[spix[:, 0], spix[:, 1]]
-    kx0, ky0 = km_per_deg(lat0)
 
     # pontos densos ao longo dos grandes rios
     major_pts = []
@@ -443,9 +486,7 @@ def main():
             if not sq.intersects(country):
                 continue
             part = sq.intersection(country)
-            small_dept = any(n in ("Pointe-Noire", "Brazzaville") and g.intersection(sq).area > 0.003
-                             for n, g in depts)
-            if part.area < 0.15 * sq.area and not small_dept:
+            if part.area < 0.15 * sq.area:
                 continue
             c = part.representative_point() if not part.contains(part.centroid) else part.centroid
             lon, lat = c.x, c.y
@@ -473,27 +514,29 @@ def main():
             pt = Point(lon, lat)
             near = small_tree.nearest(pt)
             ns = small_tree_geoms[near]
-            d_d = to_local_km(LineString([pt, ns.interpolate(ns.project(pt))]), lat0).length
+            d_d = to_local_km(LineString([pt, ns.interpolate(ns.project(pt))]), lat).length
             clip = [small_tree_geoms[i].intersection(sq) for i in small_tree.query(sq)]
-            dens = sum(to_local_km(g, lat0).length for g in clip) / (to_local_km(sq, lat0).area)
+            dens = sum(to_local_km(g, lat).length for g in clip) / (to_local_km(sq, lat).area)
             # rio derivado do DEM mais próximo (melhor relação vazão/distância)
-            dk = np.hypot((rp_lon - lon) * kx0, (rp_lat - lat) * ky0)
+            dk = np.hypot((rp_lon - lon) * kx, (rp_lat - lat) * ky)
             within = np.flatnonzero(dk <= max(25.0, float(dk.min()) + 1))
             j = int(within[np.argmax(rp_q[within] / (1 + dk[within]))])
             stream = {"d_km": round(float(dk[j]), 2), "q": round(float(rp_q[j]), 2),
                       "z": round(float(rp_z[j]), 1), "acc_km2": round(float(rp_acc[j]))}
             # HAND: altura acima da drenagem mais próxima (limiar pequeno)
-            ds = np.hypot((sp_lon - lon) * kx0, (sp_lat - lat) * ky0)
-            near_s = np.argsort(ds)[:5]
+            ds = np.hypot((sp_lon - lon) * kx, (sp_lat - lat) * ky)
+            near_s = np.argpartition(ds, 5)[:5] if ds.size > 5 else np.arange(ds.size)
             hand = max(0.0, e_low - float(np.min(sp_z[near_s])))
             # grande rio (Natural Earth + vazão de literatura)
-            dm = np.hypot((mp_lon - lon) * kx0, (mp_lat - lat) * ky0)
+            dm = np.hypot((mp_lon - lon) * kx, (mp_lat - lat) * ky)
             m = int(np.argmin(dm))
             nm = mp_name[m]
             major = {"name": nm, "d_km": round(float(dm[m]), 2), "q": MAJOR_RIVERS[nm][0],
                      "regime": MAJOR_RIVERS[nm][1], "z": round(dem_at(mp_lon[m], mp_lat[m]), 1)}
             # clima
-            pm, d_st = idw(stations, "prcp", lat, lon)
+            pm, _ = idw(stations, "prcp", lat, lon)
+            # confiança: distância à estação medida (GHCN) mais próxima, não à grade POWER
+            d_st = min((math.hypot((lon - s["lon"]) * kx, (lat - s["lat"]) * ky) for s in ghcn), default=999.0)
             tx, _ = idw(stations, "tmax", lat, lon, elev=elev)
             tn, _ = idw(stations, "tmin", lat, lon, elev=elev)
             pet_m = hargreaves_month(tx, tn, lat)
@@ -501,15 +544,16 @@ def main():
             et = budyko_et(p, pet)
             # acesso
             rd = road_tree.nearest(pt)
-            d_road = to_local_km(LineString([pt, roads[rd].interpolate(roads[rd].project(pt))]), lat0).length
+            d_road = to_local_km(LineString([pt, roads[rd].interpolate(roads[rd].project(pt))]), lat).length
             dtown = min(country_local_cities, key=lambda cc: (cc["lon"] - lon) ** 2 + (cc["lat"] - lat) ** 2)
             d_town = math.hypot((dtown["lon"] - lon) * kx, (dtown["lat"] - lat) * ky)
             pop_idx = sum(cc["pop"] / (1 + (math.hypot((cc["lon"] - lon) * kx, (cc["lat"] - lat) * ky) / 30) ** 2)
                           for cc in cities)
-            d_ocean = to_local_km(LineString([pt, coast.interpolate(coast.project(pt))]), lat0).length \
+            d_ocean = to_local_km(LineString([pt, coast.interpolate(coast.project(pt))]), lat).length \
                 if not ocean_poly.contains(pt) else 0.0
             z = zone_of(lon, lat, d_ocean)
-            peat = z == "cuvette" and lat > -0.6 and lon > 16.4  # turfeiras da Likouala/Cuvette (aprox.)
+            # turfeiras da Cuvette Centrale (Lac Tumba / Mai-Ndombe / Ubangi), aprox.: baixadas da bacia
+            peat = z == "cuvette" and hand < 8 and 16.5 <= lon <= 21.5 and -2.5 <= lat <= 2.5
             ndvi = float(np.clip((p - 800) / 1400, 0.35, 0.9))  # SINTÉTICO (proxy por chuva)
             cells.append({
                 "id": cid, "dept": dept, "depts": dept_list, "lon": round(lon, 4), "lat": round(lat, 4),
@@ -525,7 +569,11 @@ def main():
                 "pop_idx": round(pop_idx), "D_station_km": round(d_st, 1),
             })
             cid += 1
-    log(" ", len(cells), "células")
+    log(" ", len(cells), "células;", len(depts), "províncias")
+    zc = defaultdict(int)
+    for c in cells:
+        zc[c["zone"]] += 1
+    log("  zonas:", dict(zc), "| turfeiras:", sum(c["peat"] for c in cells))
 
     log("6/6 gravando arquivos")
     fc = {"type": "FeatureCollection", "features": []}
@@ -550,21 +598,23 @@ def main():
                "geometry": rnd(sb)})
     (OUT / "rivers.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": rv},
                                                    ensure_ascii=False, separators=(",", ":")))
-    cfc = [c for c in cities if country.buffer(0.05).contains(Point(c["lon"], c["lat"]))]
+    cfc = [c for c in cities if c["country"] == "COD" and country.buffer(0.05).contains(Point(c["lon"], c["lat"]))]
     (OUT / "cities.json").write_text(json.dumps(cfc, ensure_ascii=False))
     (OUT / "stations.json").write_text(json.dumps(
         [{k: s[k] for k in ("id", "name", "lat", "lon", "elev", "n_months")} | {"P": round(sum(s["prcp"]))}
-         for s in stations], ensure_ascii=False))
+         for s in ghcn], ensure_ascii=False))
     meta = {
         "cell_deg": CELL_DEG, "bbox": BBOX, "n_cells": len(cells),
         "zones": {k: v[0] for k, v in ZONES.items()},
         "sources": {
             "real": [
-                "Natural Earth 10m: departamentos, rios principais, estradas, cidades",
+                "geoBoundaries (gbOpen, OSM): limites das 26 províncias",
+                "Natural Earth 10m: rios principais, estradas, cidades",
                 "AWS Terrain Tiles (Terrarium; SRTM/NASADEM): elevação, declive, curvatura",
                 "Rede de drenagem e vazão derivadas do DEM (priority-flood + D8, escoamento por Budyko)",
-                f"NOAA GHCN-Daily: normais mensais de chuva e temperatura de {len(stations)} estações",
-                "PET por Hargreaves (FAO-56) a partir das temperaturas das estações",
+                f"NOAA GHCN-Daily: normais mensais de chuva e temperatura de {len(ghcn)} estações",
+                f"NASA POWER (MERRA-2, climatologia 2001-2025): {len(stations) - len(ghcn)} pontos em grade de {POWER_STEP}°",
+                "PET por Hargreaves (FAO-56) a partir das temperaturas",
             ],
             "synthetic": [
                 "Domínios hidrogeológicos, favorabilidade litológica e vazão por poço (aprox. Africa Groundwater Atlas / MacDonald 2012)",
@@ -573,7 +623,7 @@ def main():
                 "Coeficientes β da regressão de WTD (sem poços de calibração)",
                 "Vazões médias dos grandes rios: valores aproximados de literatura",
                 "Índice populacional por gravidade das cidades (no lugar do WorldPop)",
-                "Turfeiras da Cuvette/Likouala: área aproximada",
+                "Turfeiras da Cuvette Centrale: área aproximada",
             ],
         },
     }

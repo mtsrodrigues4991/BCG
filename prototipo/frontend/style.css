@@ -34,6 +34,7 @@
     color-scheme: dark;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
   --bg: #0f1614; --panel: #16201d; --ink: #e3ebe8; --muted: #93a39e; --line: #2a3733;
   --accent: #4fb3bd; --accent-ink: #062226; --map-bg: #0c1311; --land: #1b2623; --river: #5aa7e0;
@@ -69,6 +70,16 @@ details.block[open] { gap: 10px; }
   font: 500 11px var(--font-data); padding: 3px 7px; border-radius: 99px; white-space: nowrap;
   border: 1px solid var(--line); color: var(--muted);
 }
+.brand-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.theme-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.theme-seg button {
+  display: grid; place-items: center; width: 30px; height: 26px; padding: 0; border: 0; cursor: pointer;
+  background: transparent; color: var(--muted);
+}
+.theme-seg button + button { border-left: 1px solid var(--line); }
+.theme-seg button:hover { color: var(--ink); }
+.theme-seg button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink); }
+.theme-seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .seg button, .toolbar button {
   font: 500 13px var(--font-body); background: transparent; color: var(--ink); border: 0; padding: 7px 6px; cursor: pointer;

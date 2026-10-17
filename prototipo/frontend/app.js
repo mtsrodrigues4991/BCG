@@ -458,6 +458,16 @@
       });
     }
     for (const b of document.querySelectorAll("[data-layer]")) b.addEventListener("click", () => setLayer(b.dataset.layer));
+    // tema: light / dark força data-theme; auto remove e segue o sistema (o observer abaixo recolore o mapa)
+    const setTheme = (t) => {
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      else delete document.documentElement.dataset.theme;
+      try { localStorage.setItem("hidro-theme", t); } catch (e) {}
+      for (const b of document.querySelectorAll("[data-theme-opt]")) b.setAttribute("aria-checked", b.dataset.themeOpt === t ? "true" : "false");
+    };
+    for (const b of document.querySelectorAll("[data-theme-opt]")) b.addEventListener("click", () => setTheme(b.dataset.themeOpt));
+    setTheme(document.documentElement.dataset.theme || "auto");
+
     // explicações dos controles (ⓘ): abre/fecha a caixa logo abaixo do slider
     for (const b of document.querySelectorAll(".info")) {
       b.addEventListener("click", (e) => {

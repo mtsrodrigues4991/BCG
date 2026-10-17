@@ -4,6 +4,10 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+  // tema salvo (light/dark) aplicado antes da pintura; "auto" segue o sistema
+  try { const t = localStorage.getItem("hidro-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="vendor/leaflet.css">
@@ -17,7 +21,12 @@
         <h1>Hidro Congo</h1>
         <p class="sub">Borehole or river pumping, region by region across the Democratic Republic of the Congo</p>
       </div>
-      <span class="mode" id="mode" title="Where the calculations run">…</span>
+      <div class="brand-tools">
+        <span class="mode" id="mode" title="Where the calculations run">…</span>
+        <div class="theme-seg" role="radiogroup" aria-label="Colour theme">
+          <button type="button" data-theme-opt="light" role="radio" title="Light" aria-label="Light theme"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg></button><button type="button" data-theme-opt="auto" role="radio" title="Auto (follow system)" aria-label="Automatic theme, follows the system"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor"/></svg></button><button type="button" data-theme-opt="dark" role="radio" title="Dark" aria-label="Dark theme"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="currentColor"/></svg></button>
+        </div>
+      </div>
     </header>
 
     <section class="block">

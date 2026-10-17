@@ -98,6 +98,17 @@ def fetch(url: str, name: str) -> bytes:
     return p.read_bytes()
 
 
+def add_sources(real: list[str]):
+    """Registra fontes extras no meta.json (usado pelos scripts build_bgs/build_gee/build_wpdx)."""
+    p = OUT / "meta.json"
+    m = json.loads(p.read_text())
+    src = m.setdefault("sources", {"real": [], "synthetic": []})
+    for r in real:
+        key = r.split(":")[0]
+        src["real"] = [x for x in src["real"] if x.split(":")[0] != key] + [r]
+    p.write_text(json.dumps(m, ensure_ascii=False, indent=2))
+
+
 def ne(name: str) -> dict:
     return json.loads(fetch(NE_BASE + name + ".geojson", name + ".geojson"))
 

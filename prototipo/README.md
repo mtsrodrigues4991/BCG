@@ -53,6 +53,7 @@ python3 pipeline/build_data.py      # grade, DEM, clima, rios (cache em .cache/)
 python3 pipeline/build_bgs.py       # produtividade de aquíferos do BGS (modelo v2)
 python3 pipeline/build_gee.py       # GLOBGM, CHIRPS, SoilGrids, WorldPop, JRC via Earth Engine (~6 min)
 python3 pipeline/build_wpdx.py      # pontos de água do WPdx (validação)
+python3 pipeline/build_tiles.py     # mapas base Relief e Land cover (blocos em frontend/tiles/, ~1 min)
 ```
 
 O `build_gee.py` precisa de `EE_PROJECT` e `EE_SERVICE_ACCOUNT_KEY` (JSON de conta de serviço,
@@ -72,7 +73,7 @@ O plano do MVP (2 recursos no resource group `SAO-PAULO-team-2`, imagem no Docke
 
 | Variável | Efeito |
 |---|---|
-| `AZURE_MAPS_KEY` | chave do Azure Maps: liga o mapa base (Ruas/Satélite) sob a sobreposição. Sem ela o mapa mostra só as camadas do projeto. A chave vai para o navegador via `/api/meta`; restrinja-a por domínio no portal |
+| `AZURE_MAPS_KEY` | chave do Azure Maps: acrescenta os mapas base **Roads** e **Satellite** (ao vivo). Sem ela continuam disponíveis **Relief** e **Land cover**, gerados uma vez no Earth Engine e servidos como arquivos (`frontend/tiles/`). A chave vai para o navegador via `/api/meta`; restrinja-a por domínio no portal |
 | `ANTHROPIC_API_KEY` | liga a IA (Claude) no `/api/ask` e a caixa "Pergunte à IA" no painel da célula; sem ela a resposta é extrativa (BM25 local) |
 | `ANTHROPIC_MODEL` | modelo do Claude (padrão `claude-opus-5-5`) |
 | `BING_SUBSCRIPTION_KEY` | chave do Bing Web Search usada pelo chat (`/api/chat`); sem ela o chat usa a busca web nativa do Claude |

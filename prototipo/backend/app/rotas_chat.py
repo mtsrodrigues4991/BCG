@@ -28,10 +28,11 @@ BING_SUBSCRIPTION_KEY = os.environ.get("BING_SUBSCRIPTION_KEY", "")
 BING_SEARCH_URL = os.environ.get("BING_SEARCH_URL", "https://api.bing.microsoft.com/v7.0/search")
 
 SYSTEM = (
-    "Você é um assistente de gestão hídrica para a República Democrática do Congo (RDC). Sempre que questionado sobre dados, "
-    "legislação ou hidrogeologia, use a ferramenta de busca do Bing para encontrar informações recentes e "
-    "cite a fonte na resposta. Responda em português, de forma objetiva, e termine listando as URLs usadas. "
-    "Seu nome é Mbula (\"chuva\" em lingala); apresente-se assim só se perguntarem quem você é."
+    "You are a water-management assistant for the Democratic Republic of the Congo (DRC). Whenever you are "
+    "asked about data, legislation or hydrogeology, use the Bing search tool to find recent information and "
+    "cite the source in your answer. Reply in the language of the user's question (English by default), "
+    "concisely, and end by listing the URLs you used. "
+    "Your name is Mbula (\"rain\" in Lingala); introduce yourself that way only if asked who you are."
 )
 MAX_HISTORY = 20
 MAX_STEPS = 6
@@ -59,10 +60,10 @@ def bing_search(query: str, count: int = 5) -> list[dict]:
 
 BING_TOOL = {
     "name": "bing_search",
-    "description": "Pesquisa na web (Bing) e devolve título, URL e trecho dos resultados. Use para dados, "
-                   "clima, hidrogeologia e legislação recentes da República Democrática do Congo (RDC).",
+    "description": "Searches the web (Bing) and returns the title, URL and snippet of each result. Use it for "
+                   "recent data, climate, hydrogeology and legislation of the Democratic Republic of the Congo (DRC).",
     "strict": True,
-    "input_schema": {"type": "object", "properties": {"query": {"type": "string", "description": "termos da busca"}},
+    "input_schema": {"type": "object", "properties": {"query": {"type": "string", "description": "search terms"}},
                      "required": ["query"], "additionalProperties": False},
 }
 WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 5}
@@ -93,7 +94,7 @@ def _run_agent(messages: list[dict], tools: list[dict]) -> tuple[str, dict]:
             messages=messages,
         )
         if resp.stop_reason == "refusal":
-            return "Não posso ajudar com essa pergunta.", sources
+            return "I can't help with that question.", sources
         messages.append({"role": "assistant", "content": resp.content})
 
         for b in resp.content:
@@ -117,20 +118,20 @@ def _run_agent(messages: list[dict], tools: list[dict]) -> tuple[str, dict]:
                 hits = bing_search(b.input["query"])
                 for h in hits:
                     _add_source(sources, h["url"], h["title"])
-                text = "\n\n".join(f"{h['title']}\n{h['url']}\n{h['snippet']}" for h in hits) or "Nenhum resultado."
+                text = "\n\n".join(f"{h['title']}\n{h['url']}\n{h['snippet']}" for h in hits) or "No results."
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": text})
             except (httpx.HTTPError, KeyError, ValueError) as e:
                 results.append({"type": "tool_result", "tool_use_id": b.id, "is_error": True,
-                                "content": f"falha na busca: {e}"})
+                                "content": f"search failed: {e}"})
         messages.append({"role": "user", "content": results})
-    return "Não consegui concluir a pesquisa a tempo; tente reformular a pergunta.", sources
+    return "I couldn't finish the research in time; try rephrasing the question.", sources
 
 
 @router.post("/api/chat")
 def chat(req: ChatRequest):
     mode = _mode()
     if mode == "sem_ia":
-        return {"mode": mode, "answer": "O assistente está desativado: defina ANTHROPIC_API_KEY no servidor.",
+        return {"mode": mode, "answer": "The assistant is disabled: set ANTHROPIC_API_KEY on the server.",
                 "sources": []}
     messages = [{"role": t.role, "content": t.content} for t in req.history[-MAX_HISTORY:] if t.content.strip()]
     while messages and messages[0]["role"] != "user":  # a conversa precisa começar pelo usuário
@@ -140,7 +141,7 @@ def chat(req: ChatRequest):
         answer, sources = _run_agent(messages, [BING_TOOL] if mode == "bing" else [WEB_SEARCH_TOOL])
     except anthropic.APIError as e:
         log.warning("falha no Claude: %s", e)
-        return {"mode": mode, "answer": "O assistente está indisponível no momento. Tente novamente.",
+        return {"mode": mode, "answer": "The assistant is unavailable right now. Please try again.",
                 "sources": [], "error": str(e)}
     return {"mode": mode, "model": rag.MODEL, "answer": re.sub(r"\n{3,}", "\n\n", answer),
             "sources": list(sources.values())}

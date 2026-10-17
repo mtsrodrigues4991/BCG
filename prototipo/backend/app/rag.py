@@ -22,11 +22,12 @@ KB = Path(os.environ.get("HIDRO_KNOWLEDGE", Path(__file__).parent / "knowledge")
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5-5")
 STOP = set("a o e de da do das dos em no na nos nas um uma para por com que se ou ao à as os é".split())
 SYSTEM = (
-    "Você é o assistente do Hidro Congo, um protótipo que recomenda poço tubular ou bombeamento de rio "
-    "para irrigação na República Democrática do Congo (RDC). Responda em português, em até três parágrafos curtos, usando "
-    "apenas o contexto fornecido: trechos do plano técnico e, quando houver, os números calculados para "
-    "uma célula do mapa. Cite as seções do plano entre colchetes. Se o contexto não responder, diga isso. "
-    "Lembre que a recomendação é preliminar e que sondagem e teste de bombeamento são necessários."
+    "You are the Hidro Congo assistant, a prototype that recommends a borehole or river pumping for irrigation "
+    "in the Democratic Republic of the Congo (DRC). Reply in the language of the user's question (English by "
+    "default), in at most three short paragraphs, using only the context provided: excerpts from the technical "
+    "plan (written in Portuguese) and, when present, the figures computed for a map cell. Cite the plan sections "
+    "in square brackets. If the context does not answer the question, say so. Remind the user that the "
+    "recommendation is preliminary and that test drilling and a pumping test are required."
 )
 log = logging.getLogger("hidro.rag")
 
@@ -92,7 +93,7 @@ def _client():
 def _ask_claude(question: str, hits: list[dict], cell_ctx: dict | None) -> str:
     parts = [f"[{h['section']}]\n{h['text']}" for h in hits]
     if cell_ctx:
-        parts.append("[Célula selecionada no mapa]\n" + json.dumps(cell_ctx, ensure_ascii=False))
+        parts.append("[Cell selected on the map]\n" + json.dumps(cell_ctx, ensure_ascii=False))
     resp = _client().beta.messages.create(
         model=MODEL,
         max_tokens=8000,
@@ -100,21 +101,21 @@ def _ask_claude(question: str, hits: list[dict], cell_ctx: dict | None) -> str:
         fallbacks="default",
         output_config={"effort": "low"},
         system=SYSTEM,
-        messages=[{"role": "user", "content": "Contexto:\n\n" + "\n\n".join(parts) + f"\n\nPergunta: {question}"}],
+        messages=[{"role": "user", "content": "Context:\n\n" + "\n\n".join(parts) + f"\n\nQuestion: {question}"}],
     )
     if resp.stop_reason == "refusal":
-        raise RuntimeError("o modelo recusou a pergunta")
+        raise RuntimeError("the model refused the question")
     return "".join(b.text for b in resp.content if b.type == "text").strip()
 
 
 def answer(question: str, k: int = 3, cell_ctx: dict | None = None) -> dict:
     hits = search(question + (" " + cell_ctx.get("zona", "") if cell_ctx else ""), k)
     if status() != "claude":
-        return {"mode": "extrativo", "answer": hits[0]["text"] if hits else "Nada encontrado na base.",
+        return {"mode": "extrativo", "answer": hits[0]["text"] if hits else "Nothing found in the knowledge base.",
                 "sources": hits}
     try:
         return {"mode": "claude", "model": MODEL, "answer": _ask_claude(question, hits, cell_ctx), "sources": hits}
     except Exception as e:  # cai para o modo extrativo sem derrubar a API
         log.warning("falha no Claude: %s", e)
-        return {"mode": "extrativo", "answer": hits[0]["text"] if hits else "Nada encontrado na base.",
+        return {"mode": "extrativo", "answer": hits[0]["text"] if hits else "Nothing found in the knowledge base.",
                 "sources": hits, "error": str(e)}

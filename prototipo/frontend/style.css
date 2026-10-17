@@ -119,6 +119,19 @@ input[type="number"], select {
   background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r);
 }
 .block > .hint { margin: -4px 0 0; font-size: 12px; color: var(--muted); }
+h2.lbl { display: flex; align-items: center; gap: 6px; }
+.seg.seg2 { grid-template-columns: repeat(2, 1fr); }
+.seg button[data-mv] { font-size: 12px; }
+.valid-tab { width: 100%; border-collapse: collapse; font-size: 12px; }
+.valid-tab th, .valid-tab td { padding: 4px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.valid-tab th { text-align: left; font-weight: 400; color: var(--muted); }
+.valid-tab td { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.valid-tab thead th { text-align: right; font: 600 11px var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.valid-tab thead th:first-child { text-align: left; }
+.valid-tab .cur { color: var(--accent); font-weight: 600; }
+.valid-note { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.wp-key { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+.wp-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; border: 1.5px solid var(--ink); }
 .link { align-self: flex-start; background: none; border: 0; color: var(--accent); padding: 0; cursor: pointer; font: 500 13px var(--font-body); text-decoration: underline; }
 
 .table-wrap { overflow-x: auto; }
@@ -223,3 +236,4 @@ input[type="number"], select {
 .ask button { align-self: flex-start; font: 500 13px var(--font-body); background: var(--accent); color: var(--accent-ink); border: 0; border-radius: var(--r); padding: 6px 12px; cursor: pointer; }
 .ask button:disabled { opacity: .6; cursor: wait; }
 .ask-out { font-size: 13px; white-space: pre-wrap; }
+.valid-tab th[colspan] { padding-top: 10px; color: var(--ink); font-weight: 500; }

@@ -28,6 +28,18 @@
     </header>
 
     <section class="block">
+      <h2 class="lbl">Model <button type="button" class="info" aria-label="About the model versions" aria-expanded="false" aria-controls="tip-model">i</button></h2>
+      <div class="seg seg2" role="radiogroup" aria-label="Model version">
+        <button type="button" data-mv="1" role="radio">v1 · approximations</button>
+        <button type="button" data-mv="2" role="radio">v2 · real data</button>
+      </div>
+      <input type="hidden" id="model_version" value="1">
+      <p class="tip" id="tip-model" hidden>v1 uses rule-based aquifer zones, an illustrative water-table regression and interpolated station rainfall.
+        v2 replaces them with real data: BGS aquifer productivity (borehole yield and aquifer favourability), GLOBGM water-table depth,
+        CHIRPS rainfall and SoilGrids soil texture. The Validation panel compares both against real water points (WPdx).</p>
+    </section>
+
+    <section class="block">
       <h2>Horizon</h2>
       <div class="seg" role="radiogroup" aria-label="Planning horizon">
         <button type="button" id="hz6" data-h="6" role="radio">6 months</button>
@@ -85,6 +97,12 @@
       </div>
     </section>
 
+    <section class="block" id="valid-block" hidden>
+      <h2 class="lbl">Validation · WPdx <button type="button" class="info" aria-label="About the validation" aria-expanded="false" aria-controls="tip-valid">i</button></h2>
+      <p class="tip" id="tip-valid" hidden></p>
+      <div id="valid" aria-live="polite"></div>
+    </section>
+
     <section class="block sources">
       <h2>Data</h2>
       <p><strong>Real:</strong> <span id="src-real"></span></p>
@@ -110,6 +128,7 @@
     </div>
     <div class="toolbar toolbar2">
       <label class="chk" for="overlay"><input type="checkbox" id="overlay" checked> Overlay</label>
+      <label class="chk" for="wp-toggle" id="wp-group"><input type="checkbox" id="wp-toggle"> Water points (WPdx)</label>
       <label class="op" for="opacity">Opacity <input type="range" id="opacity" min="0.2" max="1" step="0.05" value="0.8"></label>
       <span class="tgroup" id="base-group">
         <span class="tlabel">Basemap</span>

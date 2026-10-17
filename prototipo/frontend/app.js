@@ -19,7 +19,7 @@
     kalahari: "Kalahari/Batéké plateaus (sands)", kasai: "Kasai craton (basement)",
     katanga: "Katanga (metasediments/dolomites)", embasamento: "northern and eastern basement",
   };
-  const PARAM_IDS = ["horizon_months", "start_month", "area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"];
+  const PARAM_IDS = ["model_version", "horizon_months", "start_month", "area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"];
   const $ = (id) => document.getElementById(id);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const usd = (x) => "USD " + Math.round(x).toLocaleString("en-US");
@@ -28,7 +28,7 @@
 
   const state = { ai: false, layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
                   res: null, overlay: true, opacity: 0.8, base: "road" };
-  let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, baseLayer, renderer;
+  let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, baseLayer, renderer, wpLayer = null, wpOn = false;
   const AQUIFER_LAYERS = ["zones", "wtd", "yield"];
   const ZONE_ORDER = ["cuvette", "kalahari", "kasai", "katanga", "rift", "kongo_central", "embasamento", "costeira"];
   const q = (url) => url + (url.includes("?") ? "&" : "?") + "res=" + encodeURIComponent(state.res);
@@ -131,7 +131,7 @@
     } else if (state.layer === "conf") fill = ramp((r.confianca - 0.35) / 0.6, CONF_STOPS);
     else if (state.layer === "zones") fill = css("--z-" + c.zone);
     else if (state.layer === "wtd") fill = ramp((r ? r.WTD : c.WTD0) / WTD_MAX, WTD_STOPS);
-    else fill = ramp(c.yield_Ls / YIELD_MAX, YIELD_STOPS);
+    else fill = ramp((r ? r.vazao_poco_Ls : c.yield_Ls) / YIELD_MAX, YIELD_STOPS);
     const st = { stroke: true, color: css("--land"), weight: 0.4, dashArray: null, fillColor: fill, fillOpacity: op * state.opacity };
     if (aquifer && c.peat) {  // turfeiras: contorno tracejado, mais leve na grade fina
       const fine = Number(state.res) < 0.3;
@@ -248,6 +248,7 @@
       await compute();
       buildCellLayer(fc);
       restyle();
+      loadValidation();
     } catch (e) {
       state.res = prev; syncRes();
       $("stats").textContent = "Could not switch resolution: " + e.message;
@@ -288,6 +289,13 @@
   // ---------------------------------------------------------------- UI
   const PEAT_PILL = `<span class="pill"><span class="dot" style="background:transparent;border:1.5px dashed var(--ink)"></span>Peatlands (sensitive area)</span>`;
   function renderLegend() {
+    renderLegendBody();
+    if (wpOn) $("legend").insertAdjacentHTML("beforeend", `<div class="wp-key"><strong style="width:100%">Water points (WPdx)</strong>
+      <span><span class="wp-dot" style="background:var(--ink)"></span>functional</span>
+      <span><span class="wp-dot" style="background:var(--panel)"></span>not functional</span>
+      <span><span class="wp-dot" style="background:var(--muted)"></span>unknown</span></div>`);
+  }
+  function renderLegendBody() {
     const el = $("legend");
     if (state.layer === "rec") {
       el.innerHTML = Object.values(CLS).map((k) => `<span class="pill"><span class="dot" style="background:${css(k.v)}"></span>${k.label}</span>`).join("");
@@ -306,8 +314,65 @@
         <div class="ticks"><span>0 m</span><span>${WTD_MAX / 2} m</span><span>${WTD_MAX}+ m</span></div><span style="color:var(--muted)">lighter = shallower</span>` + PEAT_PILL;
     } else {
       el.innerHTML = `<strong>Typical borehole yield</strong><div class="ramp" style="background:linear-gradient(90deg,${YIELD_STOPS.join(",")})"></div>
-        <div class="ticks"><span>0</span><span>${YIELD_MAX / 2}</span><span>${YIELD_MAX}+ L/s</span></div><span style="color:var(--muted)">domain average (approx.)</span>` + PEAT_PILL;
+        <div class="ticks"><span>0</span><span>${YIELD_MAX / 2}</span><span>${YIELD_MAX}+ L/s</span></div><span style="color:var(--muted)">${$("model_version").value === "2" ? "BGS aquifer productivity (5 km)" : "domain average (approx.)"}</span>` + PEAT_PILL;
     }
+  }
+
+  // ---------------------------------------------------------------- validação (WPdx)
+  const pctOrDash = (x) => (x === null || x === undefined ? "–" : pct(x));
+  async function loadValidation() {
+    if (STATIC) return;
+    try {
+      const v = await getJSON(q("api/validation"), {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ params: readParams() }),
+      });
+      renderValidation(v);
+    } catch (e) { $("valid").textContent = "Validation unavailable: " + e.message; }
+    $("valid-block").hidden = false;
+  }
+  function renderValidation(v) {
+    const cur = "v" + $("model_version").value, a = v.versions.v1, b = v.versions.v2;
+    const col = (k, f) => `<td class="${cur === "v1" ? "cur" : ""}">${f(a[k])}</td><td class="${cur === "v2" ? "cur" : ""}">${f(b[k])}</td>`;
+    const auc = (x) => (x === null || x === undefined ? "–" : fmt(x, 2));
+    const fb = (m, key) => { const x = m.functional_by_P[key]; return x.wells ? `${fmt(x.functional_pct)}% <span style="color:var(--muted)">(${x.wells})</span>` : "–"; };
+    $("valid").innerHTML = `
+      <table class="valid-tab"><thead><tr><th></th><th>v1</th><th>v2</th></tr></thead><tbody>
+        <tr><th>Model gives higher P where boreholes are recorded (AUC in surveyed area; 0.5 = no better than chance)</th>${col("auc_surveyed", auc)}</tr>
+        <tr><th>… same, population-matched across the country</th>${col("auc_pop_stratified", auc)}</tr>
+        <tr><th>Borehole recommended in cells with a recorded borehole</th>${col("borehole_rec_share_with_wells", pctOrDash)}</tr>
+        <tr><th>… vs. across all cells</th>${col("borehole_rec_share_all", pctOrDash)}</tr>
+        <tr><th>Mean P_borehole, cells with / without a recorded borehole</th><td class="${cur === "v1" ? "cur" : ""}">${fmt(a.mean_P_with_wells, 2)} / ${fmt(a.mean_P_without_wells, 2)}</td><td class="${cur === "v2" ? "cur" : ""}">${fmt(b.mean_P_with_wells, 2)} / ${fmt(b.mean_P_without_wells, 2)}</td></tr>
+        <tr><th colspan="3">Share of WPdx boreholes still working, by model P_borehole <span style="color:var(--muted)">(n)</span></th></tr>
+        <tr><th>P &lt; 0.30</th><td>${fb(a, "<0.30")}</td><td>${fb(b, "<0.30")}</td></tr>
+        <tr><th>0.30 – 0.50</th><td>${fb(a, "0.30-0.50")}</td><td>${fb(b, "0.30-0.50")}</td></tr>
+        <tr><th>≥ 0.50</th><td>${fb(a, ">=0.50")}</td><td>${fb(b, ">=0.50")}</td></tr>
+      </tbody></table>
+      <p class="valid-note">${fmt(v.n_wells)} boreholes recorded in WPdx, in ${fmt(a.cells_with_wells)} of ${fmt(v.n_cells)} cells. A cell without a record may still have boreholes. See ⓘ for caveats.</p>`;
+    $("tip-valid").innerHTML = "<strong>How to read it.</strong> " + v.caveats.map((t) => t.replace(/</g, "&lt;")).join(" ");
+  }
+
+  // ---------------------------------------------------------------- pontos de água (WPdx)
+  function wpStyle(well, status) {
+    const ink = css("--ink"), panel = css("--panel");
+    const fill = status === 1 ? ink : status === 0 ? panel : css("--muted");
+    return { radius: well ? 3.2 : 2.2, weight: 1.2, color: status === 1 ? panel : ink, fillColor: fill, fillOpacity: 0.95 };
+  }
+  async function setWaterpoints(on) {
+    wpOn = on;
+    if (on && !wpLayer) {
+      const d = await getJSON("api/layers/waterpoints");
+      wpLayer = L.layerGroup();
+      for (const [lon, lat, well, status, source, tech, statusTxt, year] of d.points) {
+        const m = L.circleMarker([lat, lon], Object.assign({ renderer, pane: "markerPane" }, wpStyle(well, status)));
+        m._wp = [well, status];
+        m.bindTooltip(`<div class="tt"><h3>${source}</h3><table><tr><th>Status</th><td>${statusTxt}</td></tr>
+          <tr><th>Technology</th><td>${tech}</td></tr><tr><th>Installed</th><td>${year || "–"}</td></tr>
+          <tr><th>Source</th><td>WPdx</td></tr></table></div>`, { direction: "top", opacity: 1 });
+        m.addTo(wpLayer);
+      }
+    }
+    if (wpLayer) { if (on) wpLayer.addTo(map); else map.removeLayer(wpLayer); }
+    renderLegend();
   }
 
   function renderStats() {
@@ -411,8 +476,9 @@
     for (const id of ["area_ha", "c_energia", "WTD_max", "D_max_km", "w1", "w2", "w3", "w4", "w5"]) {
       $("o_" + id).textContent = (f[id] || ((v) => fmt(v, 2)))(Number($(id).value));
     }
+    for (const b of document.querySelectorAll("[data-mv]")) b.setAttribute("aria-checked", b.dataset.mv === $("model_version").value ? "true" : "false");
     const h = Number($("horizon_months").value);
-    for (const b of document.querySelectorAll(".seg button")) {
+    for (const b of document.querySelectorAll(".seg button[data-h]")) {
       const on = b.dataset.h === String(h) || (b.dataset.h === "custom" && h !== 6 && h !== 12);
       b.setAttribute("aria-checked", on ? "true" : "false");
     }
@@ -429,6 +495,7 @@
     riverLayer.setStyle((f) => ({ color: css("--river") }));
     deptLayer.setStyle(() => ({ color: css("--ink") }));
     renderLegend(); renderStats(); renderDepts(); renderDeptLabels();
+    if (wpLayer) wpLayer.eachLayer((m) => m.setStyle(wpStyle(m._wp[0], m._wp[1])));
   }
 
   let timer = null, seq = 0;
@@ -441,6 +508,7 @@
       if (my !== seq) return;
       restyle();
       if (state.selCell !== null) openDetail(state.selCell);
+      loadValidation();
     }, STATIC ? 60 : 200);
   }
 
@@ -488,7 +556,7 @@
     $("src-syn").textContent = data.meta.sources.synthetic.join("; ") + ".";
 
     initMap(data);
-    for (const b of document.querySelectorAll(".seg button")) {
+    for (const b of document.querySelectorAll(".seg button[data-h]")) {
       b.addEventListener("click", () => {
         if (b.dataset.h !== "custom") $("horizon_months").value = b.dataset.h;
         else { $("horizon_months").value = "24"; $("horizon_months").focus(); }
@@ -508,6 +576,11 @@
       b.addEventListener("keydown", (e) => { if (e.key === "Escape") { $(b.getAttribute("aria-controls")).hidden = true; b.setAttribute("aria-expanded", "false"); } });
     }
     $("overlay").addEventListener("change", (e) => setOverlay(e.target.checked));
+    for (const b of document.querySelectorAll("[data-mv]")) b.addEventListener("click", () => { $("model_version").value = b.dataset.mv; schedule(); });
+    $("wp-group").hidden = !!STATIC;
+    $("wp-toggle").addEventListener("change", (e) => setWaterpoints(e.target.checked).catch((err) => {
+      e.target.checked = false; wpOn = false; $("stats").textContent = "Could not load water points: " + err.message;
+    }));
     $("opacity").addEventListener("input", (e) => { state.opacity = Number(e.target.value); cellLayer.setStyle(cellStyle); });
     for (const b of document.querySelectorAll("[data-base]")) {
       b.disabled = !azureKey();
@@ -538,6 +611,7 @@
     syncOutputs();
     await compute();
     restyle();
+    loadValidation();
   }
 
   main();

@@ -37,7 +37,14 @@
       "Drainage network and discharge derived from the DEM (priority-flood + D8, Budyko runoff)",
       "NOAA GHCN-Daily: monthly rainfall and temperature normals from 22 stations",
       "NASA POWER (MERRA-2, 2001-2025 climatology): 102 points on a 1.5° grid",
-      "PET by Hargreaves (FAO-56) from temperatures"
+      "PET by Hargreaves (FAO-56) from temperatures",
+      "Water Point Data Exchange (WPdx-Basic): 7956 DRC water points (validation)",
+      "BGS Africa Groundwater Atlas (MacDonald et al. 2012): aquifer productivity, 5 km (model v2)",
+      "GLOBGM v1.0 (Verkaik et al. 2024, via Google Earth Engine): steady-state water-table depth, 1 km (model v2)",
+      "CHIRPS (via Google Earth Engine): 1991-2020 monthly rainfall climatology, ~5 km (model v2)",
+      "SoilGrids 2.0 (ISRIC, via Google Earth Engine): 0-30 cm sand and clay, 250 m (model v2)",
+      "WorldPop 2020 (via Google Earth Engine): population per cell, 100 m (validation)",
+      "JRC Global Surface Water v1.4 (via Google Earth Engine): permanent surface water share"
     ],
     "synthetic": [
       "Hydrogeological domains, lithological favourability and borehole yield (approx. Africa Groundwater Atlas / MacDonald 2012)",

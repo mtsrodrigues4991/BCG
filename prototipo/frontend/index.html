@@ -132,10 +132,7 @@
       <label class="op" for="opacity">Opacity <input type="range" id="opacity" min="0.2" max="1" step="0.05" value="0.8"></label>
       <span class="tgroup" id="base-group">
         <span class="tlabel">Basemap</span>
-        <span class="mini-seg" role="radiogroup" aria-label="Basemap">
-          <button type="button" data-base="road" role="radio">Roads</button><button type="button" data-base="imagery" role="radio">Satellite</button>
-        </span>
-        <span class="hint-key" id="base-hint" hidden>set AZURE_MAPS_KEY</span>
+        <span class="mini-seg" role="radiogroup" aria-label="Basemap" id="base-seg"></span>
       </span>
       <span class="tgroup" id="res-group">
         <span class="tlabel">Resolution</span>

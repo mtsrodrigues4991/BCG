@@ -27,7 +27,7 @@
   const fmt = (x, d = 0) => Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
   const state = { ai: false, layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
-                  res: null, overlay: true, opacity: 0.8, base: "road" };
+                  res: null, overlay: true, opacity: 0.8, base: "relief", tiles: {} };
   let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, baseLayer, renderer, wpLayer = null, wpOn = false;
   const AQUIFER_LAYERS = ["zones", "wtd", "yield"];
   const ZONE_ORDER = ["cuvette", "kalahari", "kasai", "katanga", "rift", "kongo_central", "embasamento", "costeira"];
@@ -142,7 +142,8 @@
 
   // ---------------------------------------------------------------- mapa
   function initMap(data) {
-    map = L.map("map", { preferCanvas: true, zoomSnap: 0.25, minZoom: 4, maxZoom: 11, attributionControl: true }).setView([-2.9, 23.6], 5);
+    map = L.map("map", { preferCanvas: true, zoomSnap: 1,  // zoom inteiro: blocos do mapa base sem frestas de escala
+    minZoom: 4, maxZoom: 11, attributionControl: true }).setView([-2.9, 23.6], 5);
     map.createPane("basemap").style.zIndex = 150;
     map.createPane("labels").style.zIndex = 450;
     map.getPane("labels").style.pointerEvents = "none";
@@ -195,19 +196,43 @@
       "&zoom={z}&x={x}&y={y}&tileSize=256&language=en-US&subscription-key=" + encodeURIComponent(azureKey()),
       { pane, maxZoom: 19, attribution: "© Microsoft Azure Maps, © TomTom" });
   }
+  // mapas base: blocos estáticos gerados no Earth Engine (tiles/manifest.json) + ruas do Azure Maps se houver chave
+  async function loadTileManifest() {
+    if (STATIC) return;
+    try { state.tiles = (await getJSON("tiles/manifest.json")).layers || {}; } catch (e) { state.tiles = {}; }
+  }
+  function baseOptions() {
+    const opts = [["none", "None"]];
+    for (const k of ["relief", "cover", "sat"]) if (state.tiles[k]) opts.push([k, state.tiles[k].label]);
+    if (azureKey()) {
+      opts.push(["road", "Roads"]);
+      if (!state.tiles.sat) opts.push(["imagery", "Satellite"]);
+    }
+    return opts;
+  }
   function applyBase() {
     if (baseLayer) { map.removeLayer(baseLayer); baseLayer = null; }
-    if (STATIC || !azureKey()) return;
-    const dark = getComputedStyle(document.documentElement).colorScheme.includes("dark");
-    baseLayer = state.base === "imagery"
-      ? L.layerGroup([azureTiles("microsoft.imagery", "basemap"), azureTiles("microsoft.base.hybrid.road", "labels")])
-      : azureTiles(dark ? "microsoft.base.darkgrey" : "microsoft.base.road", "basemap");
-    baseLayer.addTo(map);
+    if (STATIC) return;
+    const t = state.tiles[state.base];
+    if (t) {
+      const [w, s, e, n] = t.bounds;
+      baseLayer = L.tileLayer(`tiles/${state.base}/{z}/{x}/{y}.${t.ext}`, {
+        pane: "basemap", minZoom: t.min_zoom, maxNativeZoom: t.max_zoom, maxZoom: 19,
+        bounds: L.latLngBounds([s, w], [n, e]), attribution: t.attribution,
+      });
+    } else if (state.base === "road" && azureKey()) {
+      const dark = getComputedStyle(document.documentElement).colorScheme.includes("dark");
+      baseLayer = azureTiles(dark ? "microsoft.base.darkgrey" : "microsoft.base.road", "basemap");
+    } else if (state.base === "imagery" && azureKey()) {
+      baseLayer = L.layerGroup([azureTiles("microsoft.imagery", "basemap"), azureTiles("microsoft.base.hybrid.road", "labels")]);
+    }
+    if (baseLayer) baseLayer.addTo(map);
   }
   function setBase(name) {
     state.base = name;
     for (const b of document.querySelectorAll("[data-base]")) b.setAttribute("aria-checked", b.dataset.base === name ? "true" : "false");
     applyBase();
+    renderLegend();
   }
 
   // ---------------------------------------------------------------- sobreposição e resolução
@@ -228,7 +253,7 @@
       if (!l) continue;
       if (on) l.addTo(map); else map.removeLayer(l);
     }
-    $("legend").hidden = !on;
+    renderLegend();
     $("opacity").disabled = !on;
   }
 
@@ -290,6 +315,10 @@
   const PEAT_PILL = `<span class="pill"><span class="dot" style="background:transparent;border:1.5px dashed var(--ink)"></span>Peatlands (sensitive area)</span>`;
   function renderLegend() {
     renderLegendBody();
+    const lc = state.tiles.cover;
+    if (state.base === "cover" && lc && lc.legend) $("legend").insertAdjacentHTML("beforeend", `<div class="wp-key"><strong style="width:100%">Basemap: land cover (ESA WorldCover)</strong>
+      ${lc.legend.map((c) => `<span><span class="wp-dot" style="background:${c.color};border-color:transparent;border-radius:2px"></span>${c.label}</span>`).join("")}</div>`);
+    $("legend").hidden = !$("legend").innerHTML.trim();
     if (wpOn) $("legend").insertAdjacentHTML("beforeend", `<div class="wp-key"><strong style="width:100%">Water points (WPdx)</strong>
       <span><span class="wp-dot" style="background:var(--ink)"></span>functional</span>
       <span><span class="wp-dot" style="background:var(--panel)"></span>not functional</span>
@@ -297,6 +326,7 @@
   }
   function renderLegendBody() {
     const el = $("legend");
+    if (!state.overlay) { el.innerHTML = ""; return; }
     if (state.layer === "rec") {
       el.innerHTML = Object.values(CLS).map((k) => `<span class="pill"><span class="dot" style="background:${css(k.v)}"></span>${k.label}</span>`).join("");
     } else if (state.layer === "prob") {
@@ -582,12 +612,12 @@
       e.target.checked = false; wpOn = false; $("stats").textContent = "Could not load water points: " + err.message;
     }));
     $("opacity").addEventListener("input", (e) => { state.opacity = Number(e.target.value); cellLayer.setStyle(cellStyle); });
-    for (const b of document.querySelectorAll("[data-base]")) {
-      b.disabled = !azureKey();
-      b.addEventListener("click", () => setBase(b.dataset.base));
-    }
-    $("base-hint").hidden = !!azureKey();
-    $("base-group").hidden = !!STATIC;
+    await loadTileManifest();
+    const bases = baseOptions();
+    $("base-group").hidden = !!STATIC || bases.length < 2;
+    $("base-seg").innerHTML = bases.map(([k, label]) => `<button type="button" data-base="${k}" role="radio">${label}</button>`).join("");
+    for (const b of document.querySelectorAll("[data-base]")) b.addEventListener("click", () => setBase(b.dataset.base));
+    if (!bases.some(([k]) => k === state.base)) state.base = bases.length > 1 ? bases[1][0] : "none";
     const resolutions = (!STATIC && data.meta.resolutions) || {};
     $("res-group").hidden = Object.keys(resolutions).length < 2;
     $("res-seg").innerHTML = Object.entries(resolutions).map(([k, v]) =>

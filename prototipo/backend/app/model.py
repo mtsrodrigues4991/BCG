@@ -15,13 +15,13 @@ M_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 # --- GPI: fatores e matriz AHP (escala de Saaty) -----------------------------
 GPI_FACTORS = ["lito", "perm", "rech", "slope", "dd", "dens", "lu"]
 GPI_LABELS = {
-    "lito": "litologia / aquífero favorável",
-    "perm": "permeabilidade do solo",
-    "rech": "recarga",
-    "slope": "declividade baixa",
-    "dd": "proximidade de drenagem",
-    "dens": "densidade de drenagem",
-    "lu": "cobertura vegetal",
+    "lito": "favourable lithology / aquifer",
+    "perm": "soil permeability",
+    "rech": "recharge",
+    "slope": "gentle slope",
+    "dd": "proximity to drainage",
+    "dens": "drainage density",
+    "lu": "vegetation cover",
 }
 #            lito perm rech slope dd  dens lu
 AHP_MATRIX = [
@@ -160,7 +160,7 @@ def river_option(src: dict, c: dict, q_dem: float, months: list, p: Params, hour
     C_op = kw * hours * p.c_energia
     C_cap = p.C_bomba_rio + p.C_captacao + D_m * (8 + 150 * d)
     return {
-        "name": src.get("name") or "drenagem local (DEM)", "D_km": src["d_km"], "Q_rio": round(src["q"], 2),
+        "name": src.get("name") or "local drainage (DEM)", "D_km": src["d_km"], "Q_rio": round(src["q"], 2),
         "Q_disp": round(q_avail, 4), "dz": round(dz, 1), "H_t": round(H_t, 1), "pipe_d_mm": round(d * 1000),
         "A_sup": A_sup, "R_clima": R_clima, "C_bombeamento": C_op,
         "C_bombeamento_ano": C_op * 12 / len(months), "C_capex": C_cap, "C_total": C_cap + C_op,
@@ -223,13 +223,13 @@ def evaluate(c: dict, p: Params) -> dict:
     # --- fatores explicativos ----------------------------------------------
     if rec == "poco":
         cand = {GPI_LABELS[f]: fx[f] for f in ("lito", "perm", "slope", "dd", "rech")}
-        cand["lençol raso" if W < p.WTD_max / 2 else "lençol profundo"] = 1 - W / p.WTD_max
+        cand["shallow water table" if W < p.WTD_max / 2 else "deep water table"] = 1 - W / p.WTD_max
     else:
         cand = {
-            "vazão do rio": min(1.0, rio["Q_disp"] / q_dem),
-            "desnível rio-lavoura": clip(1 - max(rio["dz"], 0) / p.Dz_max),
-            "distância ao rio": clip(1 - rio["D_km"] / p.D_max_km),
-            "custo frente ao poço": 1 - E_custo,
+            "river flow": min(1.0, rio["Q_disp"] / q_dem),
+            "river-to-field lift": clip(1 - max(rio["dz"], 0) / p.Dz_max),
+            "distance to river": clip(1 - rio["D_km"] / p.D_max_km),
+            "cost versus well": 1 - E_custo,
         }
     pos = max(cand, key=cand.get)
     neg = min(cand, key=cand.get)

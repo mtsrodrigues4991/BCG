@@ -6,9 +6,9 @@
   const M_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   const GPI_FACTORS = ["lito", "perm", "rech", "slope", "dd", "dens", "lu"];
   const GPI_LABELS = {
-    lito: "litologia / aquífero favorável", perm: "permeabilidade do solo", rech: "recarga",
-    slope: "declividade baixa", dd: "proximidade de drenagem", dens: "densidade de drenagem",
-    lu: "cobertura vegetal",
+    lito: "favourable lithology / aquifer", perm: "soil permeability", rech: "recharge",
+    slope: "gentle slope", dd: "proximity to drainage", dens: "drainage density",
+    lu: "vegetation cover",
   };
   const AHP_MATRIX = [
     [1, 2, 3, 4, 4, 5, 6],
@@ -96,7 +96,7 @@
     const C_op = kw * hours * p.c_energia;
     const C_cap = p.C_bomba_rio + p.C_captacao + D_m * (8 + 150 * d);
     return {
-      name: src.name || "drenagem local (DEM)", D_km: src.d_km, Q_rio: Math.round(src.q * 100) / 100,
+      name: src.name || "local drainage (DEM)", D_km: src.d_km, Q_rio: Math.round(src.q * 100) / 100,
       Q_disp: Math.round(qAvail * 1e4) / 1e4, dz: Math.round(dz * 10) / 10, H_t: Math.round(H_t * 10) / 10,
       pipe_d_mm: Math.round(d * 1000), A_sup, R_clima, C_bombeamento: C_op,
       C_bombeamento_ano: (C_op * 12) / months.length, C_capex: C_cap, C_total: C_cap + C_op,
@@ -153,13 +153,13 @@
     if (rec === "poco") {
       cand = {};
       for (const f of ["lito", "perm", "slope", "dd", "rech"]) cand[GPI_LABELS[f]] = fx[f];
-      cand[W < p.WTD_max / 2 ? "lençol raso" : "lençol profundo"] = 1 - W / p.WTD_max;
+      cand[W < p.WTD_max / 2 ? "shallow water table" : "deep water table"] = 1 - W / p.WTD_max;
     } else {
       cand = {
-        "vazão do rio": Math.min(1, rio.Q_disp / qDem),
-        "desnível rio-lavoura": clip(1 - Math.max(rio.dz, 0) / p.Dz_max),
-        "distância ao rio": clip(1 - rio.D_km / p.D_max_km),
-        "custo frente ao poço": 1 - E_custo,
+        "river flow": Math.min(1, rio.Q_disp / qDem),
+        "river-to-field lift": clip(1 - Math.max(rio.dz, 0) / p.Dz_max),
+        "distance to river": clip(1 - rio.D_km / p.D_max_km),
+        "cost versus well": 1 - E_custo,
       };
     }
     const keys = Object.keys(cand);

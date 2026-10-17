@@ -75,8 +75,9 @@ tem orçamento para um ano.
    nenhuma das duas é viável (vermelho).
 4. Ao tocar numa célula, ele vê a probabilidade de achar água, a profundidade estimada, quantos poços são
    necessários, o custo de cada opção em 6, 12, 24 e 60 meses e o motivo da recomendação.
-5. Pergunta à IA, em inglês ou na própria língua: *"Por que aqui é poço e não rio?"* ou *"Quais
-   cuidados ambientais nesta área?"*. A resposta usa os números da célula e o plano técnico.
+5. Toca em **Ask Mbula** e pergunta à IA, em inglês ou na própria língua: *"Por que aqui é poço e não
+   rio?"* ou *"Quais cuidados ambientais nesta área?"*. A Mbula consulta o mapa do Wherewise e a web, e
+   responde com os números da célula.
 6. Leva a lista das células mais promissoras para a equipe de sondagem e evita gastar com perfuração
    onde a chance é baixa.
 
@@ -127,7 +128,7 @@ flowchart LR
     U["Usuário<br/>navegador ou celular"]
     subgraph AZ["Azure · resource group SAO-PAULO-team-2"]
         subgraph CAE["Container Apps Environment<br/>cae-hidrocongo · Germany West Central"]
-            CA["Container App ca-hidrocongo<br/>FastAPI + frontend + dados<br/>0,5 vCPU · 1 GiB · 1 réplica"]
+            CA["Container App ca-hidrocongo<br/>FastAPI + frontend + dados<br/>0,5 vCPU · 1 GiB · 10 réplicas"]
         end
         MAPS["Azure Maps<br/>map-hidrocongo · Gen2<br/>North Europe"]
     end
@@ -137,18 +138,18 @@ flowchart LR
 
     U -- "HTTPS" --> CA
     U -- "tiles Roads / Satellite" --> MAPS
-    CA -- "/api/ask e /api/chat" --> CL
+    CA -- "/api/chat e /api/ask" --> CL
     DH -- "imagem" --> CA
     PIPE -. "gera data/ e tiles/,<br/>embutidos na imagem" .-> DH
 ```
 
 | Recurso | Serviço | Configuração | Função |
 |---|---|---|---|
-| `ca-hidrocongo` | Azure Container Apps | 0,5 vCPU, 1 GiB, 1 réplica sempre ligada, ingress HTTPS externo | Roda a API FastAPI e serve o frontend e os dados |
+| `ca-hidrocongo` | Azure Container Apps | 0,5 vCPU e 1 GiB por réplica, 10 réplicas fixas, ingress HTTPS externo | Roda a API FastAPI e serve o frontend e os dados |
 | `cae-hidrocongo` | Container Apps Environment | Germany West Central | Ambiente gerenciado do app |
 | `map-hidrocongo` | Azure Maps | Gen2 (G2), North Europe, CORS limitado ao domínio do app | Mapas base **Roads** e **Satellite** |
-| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1` a `v4` (atual) e `latest` | Registro da imagem do app |
-| Claude API | Anthropic | Modelo `claude-opus-5-5` | Respostas da IA no painel da célula e chat com busca web |
+| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1` a `v5` (atual) e `latest` | Registro da imagem do app |
+| Claude API | Anthropic | Modelo `claude-opus-5-5` | Chat da Mbula (consulta o mapa e a web) e `/api/ask` |
 
 **Segredos:** as chaves do Azure Maps e do Claude e a credencial do Docker Hub ficam como *secrets* do
 Container App (`azure-maps-key`, `anthropic-key`) e entram no container como variáveis de ambiente. Não
@@ -163,8 +164,12 @@ estão no código, na imagem nem no Git.
   (`pipeline/`). O app em produção não precisa dessas credenciais.
 - **Mapas base em duas camadas.** *Relief* (SRTM) e *Land cover* (ESA WorldCover) são arquivos
   estáticos servidos pelo próprio app e funcionam sem chave. *Roads* e *Satellite* vêm do Azure Maps.
-- **IA opcional.** Sem a chave do Claude, o app continua funcionando: o painel da célula responde com o
-  trecho mais relevante do plano técnico (busca BM25 local), e só o chat fica desligado.
+- **IA opcional.** Sem a chave do Claude, o mapa, os cálculos e os painéis continuam funcionando; só o
+  chat da Mbula fica desligado. O `/api/ask` responde com o trecho mais relevante do plano técnico
+  (busca BM25 local).
+- **10 réplicas fixas para a apresentação.** O app é stateless (os dados vêm da imagem e o histórico
+  do chat vem do navegador), então escala só aumentando réplicas. Num teste com 30 recálculos
+  simultâneos do mapa, as 30 respostas vieram OK, com tempo médio de 2,1 s.
 - **Região.** O app fica em Germany West Central, a região do resource group. O Azure Maps não existe
   nessa região, e West Europe não aceitava contas novas, então ele ficou em North Europe; os tiles
   servem o mundo todo de qualquer região.
@@ -249,7 +254,7 @@ usam o padrão, que aparece em `/api/meta`.
 | `POST /api/recommendations` | **Rota principal.** Recomendação de todas as células e resumo por província. Com `"detail": true`, devolve todos os campos do cálculo | Sim |
 | `POST /api/cells/{id}/evaluate` | Uma célula com todos os componentes do cálculo, custos do poço e do rio e a explicação em texto | Sim |
 | `POST /api/validation` | Modelos v1 e v2 comparados com os poços reais do WPdx (AUC, % de acerto, poços funcionando por faixa de probabilidade) | Sim |
-| `POST /api/ask` | Resposta do Claude sobre o plano técnico e, se vier `cell_id`, sobre aquela célula, com os trechos usados | Sim |
+| `POST /api/ask` | Resposta do Claude sobre o plano técnico e, se vier `cell_id`, sobre aquela célula, com os trechos usados | Não (integração; a interface pergunta pela Mbula) |
 | `POST /api/chat` | Chat da Mbula: Claude com busca na web, devolvendo a resposta e as fontes | Sim |
 | `GET /api/recommendation/point?lat=&lon=` | Recomendação para a célula mais próxima de uma coordenada. Fora da RDC devolve 404 | Não (integração) |
 | `GET /api/regions/{província}` | Resumo e células de uma província (ex.: `Kinshasa`, `Haut-Katanga`) | Não (integração) |
@@ -351,12 +356,12 @@ cd prototipo
 docker compose up --build        # http://localhost:8000
 ```
 
-Novo deploy (na pasta `prototipo`, trocando `v5` pela próxima versão):
+Novo deploy (na pasta `prototipo`, trocando `v6` pela próxima versão):
 
 ```powershell
-docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v5 .
-docker push mtsrodrigues4991/hidro-backend:v5
-az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v5
+docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v6 .
+docker push mtsrodrigues4991/hidro-backend:v6
+az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v6
 ```
 
 ## Documentação

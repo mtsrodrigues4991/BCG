@@ -1,11 +1,27 @@
-/* Chat flutuante do assistente hídrico: bolha no canto inferior direito + janela que conversa com POST /api/chat. */
+/* Chat flutuante da Mbula ("chuva" em lingala), a assistente hídrica: bolha no canto inferior direito
+ * + janela que conversa com POST /api/chat. */
 (function () {
   "use strict";
 
   const history = [];   // [{role, content}] enviado a cada pergunta
   let busy = false;
 
-  const ICON_CHAT = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 6.5a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Zm5 0a1.5 1.5 0 1 0 0 .01Z"/></svg>';
+  const NAME = "Mbula";
+  let gid = 0;
+  // mascote: gota de chuva com rosto (SVG inline; gradiente com id único por instância)
+  function mascot(size) {
+    const id = "cw-drop-" + gid++;
+    return `<svg class="cw-mascot" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8fdcec"/><stop offset="1" stop-color="#1f7fa8"/></linearGradient></defs>
+      <path d="M32 3C32 3 11 27 11 41a21 21 0 0 0 42 0C53 27 32 3 32 3Z" fill="url(#${id})" stroke="#0f5f7d" stroke-width="2"/>
+      <ellipse cx="21.5" cy="31" rx="3.2" ry="7" fill="#fff" opacity=".55" transform="rotate(25 21.5 31)"/>
+      <g class="cw-eyes" fill="#0b2e3b"><ellipse cx="25" cy="40" rx="3" ry="3.6"/><ellipse cx="39" cy="40" rx="3" ry="3.6"/></g>
+      <circle cx="26" cy="38.8" r="1" fill="#fff"/><circle cx="40" cy="38.8" r="1" fill="#fff"/>
+      <circle cx="19.5" cy="47" r="3" fill="#ff8fa3" opacity=".55"/><circle cx="44.5" cy="47" r="3" fill="#ff8fa3" opacity=".55"/>
+      <path d="M27 48.5q5 4.5 10 0" fill="none" stroke="#0b2e3b" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>`;
+  }
   const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4Z"/></svg>';
   const ICON_SEND = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M3 20.5V14l9-2-9-2V3.5L22 12Z"/></svg>';
 
@@ -30,15 +46,21 @@
     node.appendChild(document.createTextNode(text.slice(last)));
   }
 
-  const bubble = el("button", "cw-bubble", { type: "button", "aria-label": "Abrir assistente hídrico",
+  const bubble = el("button", "cw-bubble", { type: "button", "aria-label": `Falar com a ${NAME}, assistente hídrica`,
                                              "aria-expanded": "false", "aria-controls": "cw-panel" });
-  bubble.innerHTML = ICON_CHAT;
+  bubble.innerHTML = mascot(50);
 
-  const panel = el("section", "cw-panel", { id: "cw-panel", role: "dialog", "aria-label": "Assistente hídrico" });
+  // balão de boas-vindas ao lado da bolha (some sozinho ou ao abrir o chat)
+  const hint = el("div", "cw-hint", { role: "status" });
+  hint.textContent = `Oi! Sou a ${NAME}. Posso ajudar com água na RDC?`;
+  hint.hidden = true;
+
+  const panel = el("section", "cw-panel", { id: "cw-panel", role: "dialog", "aria-label": `${NAME}, assistente hídrica` });
   panel.hidden = true;
   panel.innerHTML =
-    '<header class="cw-head"><div><strong>Assistente hídrico</strong>' +
-    '<span>Clima, hidrogeologia e legislação da RDC, com fontes da web</span></div>' +
+    '<header class="cw-head"><span class="cw-avatar cw-avatar-lg">' + mascot(38) + "</span>" +
+    `<div class="cw-title"><strong>${NAME}</strong>` +
+    '<span>Assistente hídrica · clima, aquíferos e legislação da RDC</span></div>' +
     '<button type="button" class="cw-close" aria-label="Fechar">' + ICON_CLOSE + "</button></header>" +
     '<div class="cw-msgs" aria-live="polite"></div>' +
     '<form class="cw-form"><textarea rows="1" placeholder="Escreva sua pergunta…" aria-label="Mensagem" maxlength="4000"></textarea>' +
@@ -48,6 +70,17 @@
   const form = panel.querySelector(".cw-form");
   const input = panel.querySelector("textarea");
   const send = panel.querySelector(".cw-send");
+
+  // mensagens da Mbula vêm com o avatar ao lado
+  function place(m, withAvatar) {
+    if (!withAvatar) return msgs.appendChild(m);
+    const row = el("div", "cw-row");
+    const av = el("span", "cw-avatar");
+    av.innerHTML = mascot(28);
+    row.append(av, m);
+    msgs.appendChild(row);
+    return row;
+  }
 
   function addMsg(role, text, sources) {
     const m = el("div", "cw-msg cw-" + role);
@@ -67,16 +100,17 @@
       cap.textContent = "Fontes";
       m.append(cap, list);
     }
-    msgs.appendChild(m);
+    place(m, role === "assistant");
     msgs.scrollTop = msgs.scrollHeight;
   }
 
   function typing(on) {
-    let t = msgs.querySelector(".cw-typing");
+    let t = msgs.querySelector(".cw-thinking");
     if (on && !t) {
-      t = el("div", "cw-msg cw-assistant cw-typing", { "aria-label": "Pesquisando" });
-      t.innerHTML = "<span></span><span></span><span></span>";
-      msgs.appendChild(t);
+      const m = el("div", "cw-msg cw-assistant cw-typing", { "aria-label": `${NAME} está pesquisando` });
+      m.innerHTML = "<span></span><span></span><span></span>";
+      t = place(m, true);
+      t.classList.add("cw-thinking");
       msgs.scrollTop = msgs.scrollHeight;
     } else if (!on && t) t.remove();
   }
@@ -117,9 +151,10 @@
     panel.hidden = !open;
     bubble.setAttribute("aria-expanded", String(open));
     bubble.classList.toggle("cw-open", open);
+    hint.hidden = true;
     if (open) {
       if (!msgs.childElementCount)
-        addMsg("assistant", "Olá! Pergunte sobre chuvas, aquíferos, poços ou legislação da água na República Democrática do Congo (RDC). Eu pesquiso na web e cito as fontes.");
+        addMsg("assistant", `Olá! Eu sou a ${NAME}, que quer dizer "chuva" em lingala. Pergunte sobre chuvas, aquíferos, poços ou legislação da água na República Democrática do Congo (RDC). Eu pesquiso na web e cito as fontes.`);
       input.focus();
     } else bubble.focus();
   }
@@ -140,5 +175,8 @@
     ask(text);
   });
 
-  document.body.append(panel, bubble);
+  hint.addEventListener("click", () => toggle(true));
+  document.body.append(panel, hint, bubble);
+  setTimeout(() => { if (panel.hidden) hint.hidden = false; }, 1200);
+  setTimeout(() => { hint.hidden = true; }, 9000);
 })();

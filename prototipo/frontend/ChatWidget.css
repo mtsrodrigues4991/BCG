@@ -1,14 +1,31 @@
-/* Chat flutuante (ChatWidget.js). Usa os tokens de style.css, então segue o tema claro/escuro. */
+/* Chat flutuante da Mbula (ChatWidget.js). Usa os tokens de style.css, então segue o tema claro/escuro. */
 .cw-bubble {
   position: fixed; z-index: 1100;
   right: max(20px, env(safe-area-inset-right, 0px)); bottom: max(20px, env(safe-area-inset-bottom, 0px));
-  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer;
-  display: grid; place-items: center;
-  background: var(--accent); color: var(--accent-ink);
+  width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; padding: 0 0 4px;
+  background: var(--panel); border: 3px solid var(--accent);
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.22), 0 2px 6px rgb(0 0 0 / 0.12);
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .cw-bubble:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgb(0 0 0 / 0.26); }
+.cw-bubble .cw-mascot { animation: cw-float 3.2s ease-in-out infinite; transform-origin: 50% 90%; }
+.cw-bubble:hover .cw-mascot { animation: cw-wiggle .6s ease-in-out; }
+@keyframes cw-float { 50% { transform: translateY(-3px); } }
+@keyframes cw-wiggle { 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
+.cw-mascot .cw-eyes { animation: cw-blink 4.5s infinite; transform-origin: 50% 62%; }
+@keyframes cw-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+
+.cw-hint {
+  position: fixed; z-index: 1100; cursor: pointer;
+  right: calc(max(20px, env(safe-area-inset-right, 0px)) + 76px);
+  bottom: calc(max(20px, env(safe-area-inset-bottom, 0px)) + 14px);
+  max-width: 220px; padding: 9px 12px; border-radius: 12px 12px 4px 12px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  font: 13px/1.35 var(--font-body);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.16);
+  animation: cw-in .25s ease-out;
+}
 .cw-bubble:focus-visible, .cw-panel button:focus-visible, .cw-panel textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
@@ -28,10 +45,21 @@
 
 .cw-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 14px 14px 14px 16px; background: var(--accent); color: var(--accent-ink);
+  padding: 12px 14px; background: var(--accent); color: var(--accent-ink);
 }
-.cw-head strong { display: block; font: 600 17px/1.2 var(--font-display); letter-spacing: 0.01em; }
-.cw-head span { display: block; font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.cw-title { flex: 1; min-width: 0; }
+.cw-avatar {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; padding-bottom: 2px;
+  background: var(--panel); border: 1px solid var(--line);
+}
+.cw-avatar-lg { width: 46px; height: 46px; border: 2px solid rgb(255 255 255 / 0.7); }
+.cw-row { display: flex; align-items: flex-end; gap: 8px; align-self: flex-start; max-width: 92%; }
+.cw-row .cw-msg { max-width: 100%; }
+.cw-thinking .cw-mascot { animation: cw-think 1s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes cw-think { 50% { transform: translateY(-2px) rotate(-6deg); } }
+.cw-title strong { display: block; font: 600 17px/1.2 var(--font-display); letter-spacing: 0.01em; }
+.cw-title span { display: block; font-size: 12px; opacity: 0.85; margin-top: 2px; }
 .cw-close {
   flex: none; width: 32px; height: 32px; border: 0; border-radius: var(--r); cursor: pointer;
   display: grid; place-items: center; background: transparent; color: inherit;
@@ -93,8 +121,9 @@
     padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .cw-bubble.cw-open { display: none; }
+  .cw-hint { max-width: calc(100vw - 120px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cw-panel, .cw-typing span { animation: none; }
+  .cw-panel, .cw-typing span, .cw-hint, .cw-mascot, .cw-mascot .cw-eyes { animation: none !important; }
   .cw-bubble { transition: none; }
 }

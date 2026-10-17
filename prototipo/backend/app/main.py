@@ -10,6 +10,7 @@ Endpoints principais:
   GET  /api/regions/{dept}            resumo e células de uma província
   POST /api/cells/{id}/evaluate       detalhe completo de uma célula com parâmetros
   GET  /api/explain/{cell_id}         explicação em linguagem natural
+  POST /api/validation                modelos v1 e v2 comparados com os pontos de água do WPdx
   POST /api/ask                       perguntas à IA (Claude) sobre o plano e, opcionalmente, uma célula
   POST /api/chat                      chat do assistente hídrico com busca web (rotas_chat.py)
 
@@ -33,6 +34,7 @@ from . import rag
 from .explain import explain
 from .model import AHP_CR, AHP_LAMBDA, GPI_FACTORS, GPI_W, Params, evaluate, summarize
 from .rotas_chat import router as chat_router
+from .validation import validate
 
 BASE = Path(__file__).resolve().parent.parent.parent
 DATA = Path(os.environ.get("HIDRO_DATA", BASE / "data"))
@@ -94,7 +96,8 @@ class RecRequest(BaseModel):
     detail: bool = False   # True = devolve todos os campos; False = só o necessário ao mapa
 
 
-SLIM = ("id", "cls", "rec", "IR", "P_poco", "WTD", "H", "C_poco_total", "confianca", "fator_pos", "fator_neg")
+SLIM = ("id", "cls", "rec", "IR", "P_poco", "WTD", "H", "C_poco_total", "confianca", "fator_pos", "fator_neg",
+        "vazao_poco_Ls")
 
 
 @app.get("/api/health")
@@ -120,7 +123,7 @@ def get_cells(res: str | None = None):
 @app.get("/api/layers/{name}")
 def layer(name: str):
     files = {"departments": "departments.geojson", "rivers": "rivers.geojson",
-             "cities": "cities.json", "stations": "stations.json"}
+             "cities": "cities.json", "stations": "stations.json", "waterpoints": "waterpoints.json"}
     if name not in files:
         raise HTTPException(404, "unknown layer")
     return JSONResponse(json.loads((DATA / files[name]).read_text()))
@@ -147,6 +150,13 @@ def nearest_cell(lat: float, lon: float, res: str) -> dict:
     if d > 0.8 * float(res) * 111:  # além de ~meia diagonal da célula: fora da grade
         raise HTTPException(404, "coordinate outside the DRC area covered by the grid")
     return best
+
+
+@app.post("/api/validation")
+def validation(req: RecRequest, res: str | None = None):
+    """Recomendações (modelos v1 e v2) comparadas com os pontos de água do WPdx; veja VALIDACAO.md."""
+    res = check_res(res)
+    return _round(validate(cells(res), req.params, res, str(DATA)))
 
 
 @app.get("/api/recommendation/point")

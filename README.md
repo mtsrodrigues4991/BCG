@@ -1,4 +1,4 @@
-# Hidro Congo
+# WareWise
 
 **Poço ou rio?** Inteligência geoespacial que recomenda, para cada região da República Democrática do
 Congo (RDC), a melhor forma de levar água à agricultura: perfurar um **poço tubular** ou **bombear
@@ -9,7 +9,7 @@ Protótipo do time **SAO-PAULO-team-2** no Platinion Hackathon 2026.
 
 | Acesse o app | |
 |---|---|
-| **https://ca-hidrocongo.bravegrass-2f493583.germanywestcentral.azurecontainerapps.io** <br><br> Aponte a câmera do celular para o QR code. <br><br> Versões para impressão: [PNG](docs/qrcode-app.png) · [SVG](docs/qrcode-app.svg) | <img src="docs/qrcode-app.png" alt="QR code para o app Hidro Congo" width="220"> |
+| **https://ca-hidrocongo.bravegrass-2f493583.germanywestcentral.azurecontainerapps.io** <br><br> Aponte a câmera do celular para o QR code. <br><br> Versões para impressão: [PNG](docs/qrcode-app.png) · [SVG](docs/qrcode-app.svg) | <img src="docs/qrcode-app.png" alt="QR code para o app WareWise" width="220"> |
 
 ---
 
@@ -32,7 +32,7 @@ Quem decide onde investir em irrigação (governo, ONGs, empresas de perfuraçã
 
 ## 2. A solução
 
-O Hidro Congo junta essas fontes abertas numa **grade de células** que cobre o país (1.245 células de
+O WareWise junta essas fontes abertas numa **grade de células** que cobre o país (1.245 células de
 ~44 km, ou 4.847 de ~22 km) e calcula, para cada uma:
 
 | Saída | Como é calculada |

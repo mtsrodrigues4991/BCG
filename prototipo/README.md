@@ -1,4 +1,4 @@
-# Hidro Congo — protótipo
+# WareWise — protótipo
 
 Protótipo do hackathon que implementa o [plano de arquitetura](../plano_arquitetura.md): para cada
 província da República Democrática do Congo (RDC), recomenda **poço tubular** ou **bombeamento de rio**, com probabilidade

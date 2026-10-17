@@ -241,6 +241,21 @@
     } else bubble.focus();
   }
 
+  function openWith(text) {
+    const q = String(text || "").trim();
+    toggle(true);
+    if (!q) return;
+    if (busy) {
+      input.value = q;
+      autosize();
+      return;
+    }
+    input.value = "";
+    autosize();
+    ask(q);
+  }
+  window.MbulaChat = { open: () => toggle(true), ask: openWith };
+
   bubble.addEventListener("click", () => toggle(panel.hidden));
   panel.querySelector(".cw-close").addEventListener("click", () => toggle(false));
   panel.addEventListener("keydown", (e) => { if (e.key === "Escape") toggle(false); });

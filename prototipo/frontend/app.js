@@ -1,4 +1,4 @@
-/* Hidro Congo: frontend.
+/* WareWise: frontend.
  * Modo API: dados e cálculos vêm do FastAPI (/api/...).
  * Modo estático: window.HIDRO_DATA embutido e cálculos por model.js. */
 (function () {
@@ -35,7 +35,7 @@
   const pct = (x) => Math.round(100 * x) + "%";
   const fmt = (x, d = 0) => Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-  const state = { ai: false, layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
+  const state = { layer: "rec", cells: [], cellById: {}, results: [], resById: {}, depts: [], selDept: null, selCell: null, meta: null,
                   res: null, overlay: true, opacity: 0.8, base: "relief", tiles: {} };
   let map, cellLayer, deptLayer, deptLabels, selLayer, riverLayer, cityLayer, silLayer, baseLayer, renderer, wpLayer = null, wpOn = false;
   const AQUIFER_LAYERS = ["zones", "wtd", "yield"];
@@ -141,12 +141,51 @@
     else if (state.layer === "zones") fill = css("--z-" + c.zone);
     else if (state.layer === "wtd") fill = ramp((r ? r.WTD : c.WTD0) / WTD_MAX, WTD_STOPS);
     else fill = ramp((r ? r.vazao_poco_Ls : c.yield_Ls) / YIELD_MAX, YIELD_STOPS);
-    const st = { stroke: true, color: css("--land"), weight: 0.4, dashArray: null, fillColor: fill, fillOpacity: op * state.opacity };
+    const selected = state.selCell === c.id;
+    const dim = state.selCell != null && !selected;
+    const st = {
+      stroke: true, dashArray: null,
+      color: selected ? css("--ink") : css("--land"),
+      weight: selected ? 1.8 : 0.4,
+      fillColor: dim ? darkenHex(fill, 0.62) : fill,
+      fillOpacity: op * state.opacity,
+    };
     if (aquifer && c.peat) {  // turfeiras: contorno tracejado, mais leve na grade fina
       const fine = Number(state.res) < 0.3;
-      Object.assign(st, { color: css("--ink"), weight: fine ? 0.7 : 1.1, dashArray: fine ? "2 3" : "3 3" });
+      Object.assign(st, { color: css("--ink"), weight: selected ? 1.8 : (fine ? 0.7 : 1.1), dashArray: fine ? "2 3" : "3 3" });
     }
     return st;
+  }
+
+  function darkenHex(hex, t) {
+    const raw = (hex || "").trim();
+    if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return hex;
+    const parts = raw.length === 4
+      ? [raw[1] + raw[1], raw[2] + raw[2], raw[3] + raw[3]]
+      : [raw.slice(1, 3), raw.slice(3, 5), raw.slice(5, 7)];
+    return "#" + parts.map((p) => Math.round(parseInt(p, 16) * t).toString(16).padStart(2, "0")).join("");
+  }
+
+  function restyleCells() {
+    if (cellLayer) cellLayer.setStyle(cellStyle);
+  }
+
+  function focusSelectedCell() {
+    if (!isMobile() || !map || state.selCell == null) return;
+    const c = state.cellById[state.selCell];
+    if (!c) return;
+    const latlng = L.latLng(c.lat, c.lon);
+    const size = map.getSize();
+    const picker = document.querySelector(".layer-picker");
+    const mhead = document.querySelector(".mhead");
+    const top = picker && picker.getBoundingClientRect().height
+      ? picker.getBoundingClientRect().bottom
+      : (mhead ? mhead.getBoundingClientRect().bottom : 96);
+    const peek = Math.min(window.innerHeight * 0.48, 420);
+    const visibleMid = top + Math.max(80, size.y - peek - top) / 2;
+    const pt = map.project(latlng, map.getZoom());
+    pt.y += size.y / 2 - visibleMid;
+    map.panTo(map.unproject(pt, map.getZoom()), { animate: true, duration: 0.45 });
   }
 
   // ---------------------------------------------------------------- mapa
@@ -367,6 +406,7 @@
   function hideDetail() {
     const el = $("detail");
     state.selCell = null;
+    restyleCells();
     setDetailExpanded(false);
     document.body.classList.remove("has-detail");
     if (!el) return;
@@ -588,6 +628,8 @@
 
   async function openDetail(id) {
     state.selCell = id;
+    restyleCells();
+    focusSelectedCell();
     const el = $("detail");
     let d;
     const body = $("detail-body") || el;
@@ -621,24 +663,16 @@
         ${bar("A_sub (borehole)", comp.A_sub)}${bar("1 − A_sup (river)", comp.A_sup_inv)}${bar("E_cost", comp.E_custo)}
         ${bar("R_climate", comp.R_clima)}${bar("A_access", comp.A_acesso)}</div>
       <p class="explain">${d.explanation}</p>
-      ${state.ai ? `<form class="ask" id="ask-form"><h4>Ask the AI about this cell</h4>
-        <textarea id="ask-q" rows="2">Why is this the recommendation here, and what could change with a field study?</textarea>
-        <button type="submit" id="ask-btn">Ask Claude</button><div class="ask-out" id="ask-out" aria-live="polite"></div></form>` : ""}`;
-    if (state.ai) $("ask-form").addEventListener("submit", (e) => { e.preventDefault(); askAI(id); });
+      <form class="ask" id="ask-form"><h4>Ask Mbula about this cell</h4>
+        <textarea id="ask-q" rows="2">Why is this the recommendation here around ${c.dept} (${fmt(c.lat, 2)}°, ${fmt(c.lon, 2)}°), and what could change with a field study?</textarea>
+        <button type="submit" id="ask-btn">Ask Mbula</button></form>`;
+    $("ask-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = ($("ask-q").value || "").trim();
+      if (window.MbulaChat) window.MbulaChat.ask(q);
+    });
     const closeBtn = $("close-detail");
     if (closeBtn) closeBtn.onclick = hideDetail;
-  }
-
-  async function askAI(id) {
-    const out = $("ask-out"), btn = $("ask-btn");
-    btn.disabled = true; out.textContent = "Asking Claude…";
-    try {
-      const r = await getJSON("api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: $("ask-q").value, cell_id: id, params: readParams(), res: state.res }) });
-      out.textContent = r.answer;
-      if (r.mode !== "claude") out.textContent = "AI unavailable right now; most relevant excerpt from the plan: " + r.answer;
-    } catch (e) { out.textContent = "Could not reach the AI: " + e.message; }
-    btn.disabled = false;
   }
 
   function syncOutputs() {
@@ -812,7 +846,6 @@
       return;
     }
     state.meta = data.meta;
-    if (!STATIC) { try { state.ai = (await getJSON("api/health")).rag === "claude"; } catch (e) { state.ai = false; } }
     state.cells = data.cells.features.map((f) => f.properties);
     for (const c of state.cells) state.cellById[c.id] = c;
     $("mode").textContent = STATIC ? "static demo" : "FastAPI";

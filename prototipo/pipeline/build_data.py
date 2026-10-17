@@ -1,4 +1,4 @@
-"""Pipeline de dados do protótipo Hidro Congo.
+"""Pipeline de dados do protótipo WareWise.
 
 Baixa dados abertos leves, deriva covariáveis por célula da grade e grava os
 arquivos que a API e o frontend consomem em ../data/.

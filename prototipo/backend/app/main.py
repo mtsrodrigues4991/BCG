@@ -39,7 +39,7 @@ DATA = Path(os.environ.get("HIDRO_DATA", BASE / "data"))
 FRONTEND = Path(os.environ.get("HIDRO_FRONTEND", BASE / "frontend"))
 
 app = FastAPI(title="Hidro Congo API", version="0.1.0",
-              description="Recomendação de poço tubular x bombeamento de rio na República Democrática do Congo")
+              description="Borehole vs. river pumping recommendations for the Democratic Republic of the Congo")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(chat_router)
 
@@ -55,7 +55,7 @@ def check_res(res: str | None) -> str:
     if res is None:
         return next(iter(resolutions()))
     if res not in resolutions():
-        raise HTTPException(404, f"resolução '{res}' indisponível; use uma de {list(resolutions())}")
+        raise HTTPException(404, f"resolution '{res}' not available; use one of {list(resolutions())}")
     return res
 
 
@@ -112,7 +112,7 @@ def layer(name: str):
     files = {"departments": "departments.geojson", "rivers": "rivers.geojson",
              "cities": "cities.json", "stations": "stations.json"}
     if name not in files:
-        raise HTTPException(404, "camada desconhecida")
+        raise HTTPException(404, "unknown layer")
     return JSONResponse(json.loads((DATA / files[name]).read_text()))
 
 
@@ -135,7 +135,7 @@ def nearest_cell(lat: float, lon: float, res: str) -> dict:
     best = min(cells(res), key=lambda c: (c["lat"] - lat) ** 2 + ((c["lon"] - lon) * math.cos(math.radians(lat))) ** 2)
     d = math.hypot((best["lat"] - lat) * 110.57, (best["lon"] - lon) * 111.32 * math.cos(math.radians(lat)))
     if d > 0.8 * float(res) * 111:  # além de ~meia diagonal da célula: fora da grade
-        raise HTTPException(404, "coordenada fora da área da RDC coberta pela grade")
+        raise HTTPException(404, "coordinate outside the DRC area covered by the grid")
     return best
 
 
@@ -154,7 +154,7 @@ def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: f
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
     sel = [c for c in cells(check_res(res)) if dept in c["depts"]]
     if not sel:
-        raise HTTPException(404, f"província '{dept}' não encontrada")
+        raise HTTPException(404, f"province '{dept}' not found")
     res = [evaluate(c, p) for c in sel]
     summary = next(s for s in summarize(sel, res) if s["dept"] == dept)
     return _round({"summary": summary, "cells": [{k: r[k] for k in SLIM} for r in res]})
@@ -164,7 +164,7 @@ def region(dept: str, horizon_months: int = 12, start_month: int = 6, area_ha: f
 def evaluate_cell(cell_id: int, req: RecRequest, res: str | None = None):
     cs = cells(check_res(res))
     if not 0 <= cell_id < len(cs):
-        raise HTTPException(404, "célula inexistente")
+        raise HTTPException(404, "cell not found")
     c = cs[cell_id]
     p = Params.from_dict(req.params)
     r = evaluate(c, p)
@@ -176,7 +176,7 @@ def explain_cell(cell_id: int, horizon_months: int = Query(12), start_month: int
                  area_ha: float = Query(5.0), res: str | None = None):
     cs = cells(check_res(res))
     if not 0 <= cell_id < len(cs):
-        raise HTTPException(404, "célula inexistente")
+        raise HTTPException(404, "cell not found")
     c = cs[cell_id]
     p = Params.from_dict({"horizon_months": horizon_months, "start_month": start_month, "area_ha": area_ha})
     r = evaluate(c, p)
@@ -210,7 +210,7 @@ def ask(req: AskRequest):
     if req.cell_id is not None:
         res = check_res(req.res)
         if not 0 <= req.cell_id < len(cells(res)):
-            raise HTTPException(404, "célula inexistente")
+            raise HTTPException(404, "cell not found")
         ctx = cell_context(req.cell_id, req.params, res)
     return rag.answer(req.question, req.k, ctx)
 

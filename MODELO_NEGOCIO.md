@@ -1,4 +1,4 @@
-# Modelo de negócio do Hidro Congo
+# Modelo de negócio do Wherewise
 
 Como transformar o protótipo em um negócio viável com três clientes: **governos**, **empresas de
 distribuição de água** e **agricultores**.

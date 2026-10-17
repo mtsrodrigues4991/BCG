@@ -1,4 +1,4 @@
-# Hidro Congo — protótipo
+# Wherewise — protótipo
 
 Protótipo do hackathon que implementa o [plano de arquitetura](../plano_arquitetura.md): para cada
 província da República Democrática do Congo (RDC), recomenda **poço tubular** ou **bombeamento de rio**, com probabilidade
@@ -33,7 +33,7 @@ uvicorn app.main:app --port 8000
 
 ### Demo estática (sem servidor)
 
-`dist/hidro-congo.html` é um arquivo único com dados e modelo embutidos; os cálculos rodam no navegador
+`dist/wherewise.html` é um arquivo único com dados e modelo embutidos; os cálculos rodam no navegador
 com `frontend/model.js`. Regere com `python3 pipeline/build_artifact.py`.
 
 ### Testes

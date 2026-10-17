@@ -1,4 +1,4 @@
-"""Gera dist/hidro-congo.html: demo estática de arquivo único (sem API).
+"""Gera dist/wherewise.html: demo estática de arquivo único (sem API).
 
 Embute os dados de data/ e o frontend; os cálculos rodam em frontend/model.js
 (idêntico ao backend, ver backend/tests/test_parity.py).
@@ -35,7 +35,7 @@ def main():
     html = html.replace('<link rel="stylesheet" href="ChatWidget.css">\n', "")
     html = html.replace('<script src="ChatWidget.js"></script>\n', "")
     DIST.mkdir(exist_ok=True)
-    out = DIST / "hidro-congo.html"
+    out = DIST / "wherewise.html"
     out.write_text(html)
     print(out, round(out.stat().st_size / 1024), "KB")
 

@@ -1,4 +1,11 @@
-# Hidro Congo
+# Wherewise
+
+*Know where before you build.*
+
+O Wherewise calcula a probabilidade de sucesso de um investimento em cada lugar, antes que ele seja
+feito. A primeira linha de produto é **Wherewise · Water DRC**; o mesmo método se aplica a outros
+países e a outras decisões de localização. Os recursos de nuvem mantêm o nome do protótipo
+(`hidrocongo`), e por isso a URL não mudou.
 
 **Poço ou rio?** Inteligência geoespacial que recomenda, para cada região da República Democrática do
 Congo (RDC), a melhor forma de levar água à agricultura: perfurar um **poço tubular** ou **bombear
@@ -9,7 +16,7 @@ Protótipo do time **SAO-PAULO-team-2** no Platinion Hackathon 2026.
 
 | Acesse o app | |
 |---|---|
-| **https://ca-hidrocongo.bravegrass-2f493583.germanywestcentral.azurecontainerapps.io** <br><br> Aponte a câmera do celular para o QR code. <br><br> Versões para impressão: [PNG](docs/qrcode-app.png) · [SVG](docs/qrcode-app.svg) | <img src="docs/qrcode-app.png" alt="QR code para o app Hidro Congo" width="220"> |
+| **https://ca-hidrocongo.bravegrass-2f493583.germanywestcentral.azurecontainerapps.io** <br><br> Aponte a câmera do celular para o QR code. <br><br> Versões para impressão: [PNG](docs/qrcode-app.png) · [SVG](docs/qrcode-app.svg) | <img src="docs/qrcode-app.png" alt="QR code para o app Wherewise" width="220"> |
 
 ---
 
@@ -32,7 +39,7 @@ Quem decide onde investir em irrigação (governo, ONGs, empresas de perfuraçã
 
 ## 2. A solução
 
-O Hidro Congo junta essas fontes abertas numa **grade de células** que cobre o país (1.245 células de
+O Wherewise junta essas fontes abertas numa **grade de células** que cobre o país (1.245 células de
 ~44 km, ou 4.847 de ~22 km) e calcula, para cada uma:
 
 | Saída | Como é calculada |
@@ -140,7 +147,7 @@ flowchart LR
 | `ca-hidrocongo` | Azure Container Apps | 0,5 vCPU, 1 GiB, 1 réplica sempre ligada, ingress HTTPS externo | Roda a API FastAPI e serve o frontend e os dados |
 | `cae-hidrocongo` | Container Apps Environment | Germany West Central | Ambiente gerenciado do app |
 | `map-hidrocongo` | Azure Maps | Gen2 (G2), North Europe, CORS limitado ao domínio do app | Mapas base **Roads** e **Satellite** |
-| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1` a `v3` (atual) e `latest` | Registro da imagem do app |
+| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1` a `v4` (atual) e `latest` | Registro da imagem do app |
 | Claude API | Anthropic | Modelo `claude-opus-5-5` | Respostas da IA no painel da célula e chat com busca web |
 
 **Segredos:** as chaves do Azure Maps e do Claude e a credencial do Docker Hub ficam como *secrets* do
@@ -215,7 +222,7 @@ flowchart TB
 | `backend/tests/` | pytest + Node | Testes da API, do chat, da validação e da paridade Python × JavaScript |
 
 **Por que o modelo existe em Python e em JavaScript:** a API usa o de Python, e `model.js` permite
-gerar uma **demo estática de arquivo único** (`pipeline/build_artifact.py` → `dist/hidro-congo.html`)
+gerar uma **demo estática de arquivo único** (`pipeline/build_artifact.py` → `dist/wherewise.html`)
 que roda no navegador **sem internet e sem servidor**. Ela serve para técnicos em áreas sem conexão. O
 `test_parity.py` roda os dois sobre todas as células e garante que dão os mesmos números.
 
@@ -344,12 +351,12 @@ cd prototipo
 docker compose up --build        # http://localhost:8000
 ```
 
-Novo deploy (na pasta `prototipo`, trocando `v4` pela próxima versão):
+Novo deploy (na pasta `prototipo`, trocando `v5` pela próxima versão):
 
 ```powershell
-docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v4 .
-docker push mtsrodrigues4991/hidro-backend:v4
-az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v4
+docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v5 .
+docker push mtsrodrigues4991/hidro-backend:v5
+az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v5
 ```
 
 ## Documentação

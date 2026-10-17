@@ -45,7 +45,7 @@ SYSTEM = (
     "Write brief answers. Don't write more than 100 words. "
     "When the user asks how to extract water, drill, pump from a river, or what the map recommends "
     "near a city, village or province, call lookup_map with that place name before answering. "
-    "Those figures come from the Hidro Congo map (local grid), not the web; do not invent web URLs for them. "
+    "Those figures come from the Wherewise map (local grid), not the web; do not invent web URLs for them. "
     "Use web search only for news, legislation or facts that are not on the map."
 )
 
@@ -140,7 +140,7 @@ def _province_brief(dept: str, cs: list[dict]) -> str:
     ranked = sorted(zip(sel, rs), key=lambda x: -abs(x[1]["IR"] - 0.5))[:3]
     for c, r in ranked:
         lines.append(f"- Cell {c['id']} near {c['lat']:.2f}, {c['lon']:.2f}: {CLS_TXT[r['cls']]} (IR {r['IR']:.2f}).")
-    lines.append("Source: Hidro Congo local map model. Recommendation is preliminary.")
+    lines.append("Source: Wherewise local map model. Recommendation is preliminary.")
     return "\n".join(lines)
 
 
@@ -190,7 +190,7 @@ BING_TOOL = {
 WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 5}
 MAP_TOOL = {
     "name": "lookup_map",
-    "description": "Reads Hidro Congo's local map model (borehole vs river pumping) for a DRC city, "
+    "description": "Reads Wherewise's local map model (borehole vs river pumping) for a DRC city, "
                    "village or province. Use this for extraction, irrigation or aquifer questions about a "
                    "place on the map (e.g. Watsa, Kinshasa, Haut-Uele). This is not a web search.",
     "strict": True,

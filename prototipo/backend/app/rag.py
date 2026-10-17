@@ -22,7 +22,7 @@ KB = Path(os.environ.get("HIDRO_KNOWLEDGE", Path(__file__).parent / "knowledge")
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5-5")
 STOP = set("a o e de da do das dos em no na nos nas um uma para por com que se ou ao à as os é".split())
 SYSTEM = (
-    "You are the Hidro Congo assistant, a prototype that recommends a borehole or river pumping for irrigation "
+    "You are the Wherewise assistant, a prototype that recommends a borehole or river pumping for irrigation "
     "in the Democratic Republic of the Congo (DRC). Reply in the language of the user's question (English by "
     "default), in at most three short paragraphs, using only the context provided: excerpts from the technical "
     "plan (written in Portuguese) and, when present, the figures computed for a map cell. Cite the plan sections "

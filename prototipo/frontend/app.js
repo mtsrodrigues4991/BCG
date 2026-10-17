@@ -1,4 +1,4 @@
-/* Hidro Congo: frontend.
+/* Wherewise: frontend.
  * Modo API: dados e cálculos vêm do FastAPI (/api/...).
  * Modo estático: window.HIDRO_DATA embutido e cálculos por model.js. */
 (function () {

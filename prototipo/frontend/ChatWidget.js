@@ -46,25 +46,25 @@
     node.appendChild(document.createTextNode(text.slice(last)));
   }
 
-  const bubble = el("button", "cw-bubble", { type: "button", "aria-label": `Falar com a ${NAME}, assistente hídrica`,
+  const bubble = el("button", "cw-bubble", { type: "button", "aria-label": `Chat with ${NAME}, the water assistant`,
                                              "aria-expanded": "false", "aria-controls": "cw-panel" });
   bubble.innerHTML = mascot(50);
 
   // balão de boas-vindas ao lado da bolha (some sozinho ou ao abrir o chat)
   const hint = el("div", "cw-hint", { role: "status" });
-  hint.textContent = `Oi! Sou a ${NAME}. Posso ajudar com água na RDC?`;
+  hint.textContent = `Hi! I'm ${NAME}. Can I help with water in the DRC?`;
   hint.hidden = true;
 
-  const panel = el("section", "cw-panel", { id: "cw-panel", role: "dialog", "aria-label": `${NAME}, assistente hídrica` });
+  const panel = el("section", "cw-panel", { id: "cw-panel", role: "dialog", "aria-label": `${NAME}, water assistant` });
   panel.hidden = true;
   panel.innerHTML =
     '<header class="cw-head"><span class="cw-avatar cw-avatar-lg">' + mascot(38) + "</span>" +
     `<div class="cw-title"><strong>${NAME}</strong>` +
-    '<span>Assistente hídrica · clima, aquíferos e legislação da RDC</span></div>' +
-    '<button type="button" class="cw-close" aria-label="Fechar">' + ICON_CLOSE + "</button></header>" +
+    '<span>Water assistant · climate, aquifers and legislation in the DRC</span></div>' +
+    '<button type="button" class="cw-close" aria-label="Close">' + ICON_CLOSE + "</button></header>" +
     '<div class="cw-msgs" aria-live="polite"></div>' +
-    '<form class="cw-form"><textarea rows="1" placeholder="Escreva sua pergunta…" aria-label="Mensagem" maxlength="4000"></textarea>' +
-    '<button type="submit" class="cw-send" aria-label="Enviar">' + ICON_SEND + "</button></form>";
+    '<form class="cw-form"><textarea rows="1" placeholder="Type your question…" aria-label="Message" maxlength="4000"></textarea>' +
+    '<button type="submit" class="cw-send" aria-label="Send">' + ICON_SEND + "</button></form>";
 
   const msgs = panel.querySelector(".cw-msgs");
   const form = panel.querySelector(".cw-form");
@@ -97,7 +97,7 @@
         list.appendChild(li);
       }
       const cap = el("div", "cw-sources-cap");
-      cap.textContent = "Fontes";
+      cap.textContent = "Sources";
       m.append(cap, list);
     }
     place(m, role === "assistant");
@@ -107,7 +107,7 @@
   function typing(on) {
     let t = msgs.querySelector(".cw-thinking");
     if (on && !t) {
-      const m = el("div", "cw-msg cw-assistant cw-typing", { "aria-label": `${NAME} está pesquisando` });
+      const m = el("div", "cw-msg cw-assistant cw-typing", { "aria-label": `${NAME} is searching` });
       m.innerHTML = "<span></span><span></span><span></span>";
       t = place(m, true);
       t.classList.add("cw-thinking");
@@ -140,7 +140,7 @@
       history.push({ role: "user", content: text }, { role: "assistant", content: data.answer });
       addMsg("assistant", data.answer, data.sources);
     } catch (e) {
-      addMsg("error", "Não foi possível falar com o assistente (" + e.message + "). Tente de novo.");
+      addMsg("error", "Could not reach the assistant (" + e.message + "). Please try again.");
     } finally {
       setBusy(false);
       input.focus();
@@ -154,7 +154,7 @@
     hint.hidden = true;
     if (open) {
       if (!msgs.childElementCount)
-        addMsg("assistant", `Olá! Eu sou a ${NAME}, que quer dizer "chuva" em lingala. Pergunte sobre chuvas, aquíferos, poços ou legislação da água na República Democrática do Congo (RDC). Eu pesquiso na web e cito as fontes.`);
+        addMsg("assistant", `Hi! I'm ${NAME}, which means "rain" in Lingala. Ask me about rainfall, aquifers, boreholes or water legislation in the Democratic Republic of the Congo (DRC). I search the web and cite my sources.`);
       input.focus();
     } else bubble.focus();
   }

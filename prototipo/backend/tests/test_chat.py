@@ -19,6 +19,14 @@ def test_chat_validation():
                        ).status_code == 422
 
 
+def test_lookup_map_watsa():
+    text = rotas_chat.lookup_map("Watsa")
+    assert "Watsa" in text and "cell" in text.lower()
+    assert any(k in text.lower() for k in ("borehole", "river", "inconclusive", "recommended"))
+    assert rotas_chat.lookup_map("").startswith("Need a")
+    assert "No city" in rotas_chat.lookup_map("Atlantis")
+
+
 def test_bing_search_parsing(monkeypatch):
     seen = {}
 

@@ -140,7 +140,7 @@ flowchart LR
 | `ca-hidrocongo` | Azure Container Apps | 0,5 vCPU, 1 GiB, 1 réplica sempre ligada, ingress HTTPS externo | Roda a API FastAPI e serve o frontend e os dados |
 | `cae-hidrocongo` | Container Apps Environment | Germany West Central | Ambiente gerenciado do app |
 | `map-hidrocongo` | Azure Maps | Gen2 (G2), North Europe, CORS limitado ao domínio do app | Mapas base **Roads** e **Satellite** |
-| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1`, `v2`, `latest` | Registro da imagem do app |
+| `mtsrodrigues4991/hidro-backend` | Docker Hub | Imagem `linux/amd64`, tags `v1` a `v3` (atual) e `latest` | Registro da imagem do app |
 | Claude API | Anthropic | Modelo `claude-opus-5-5` | Respostas da IA no painel da célula e chat com busca web |
 
 **Segredos:** as chaves do Azure Maps e do Claude e a credencial do Docker Hub ficam como *secrets* do
@@ -344,12 +344,12 @@ cd prototipo
 docker compose up --build        # http://localhost:8000
 ```
 
-Novo deploy (na pasta `prototipo`, trocando `v3` pela próxima versão):
+Novo deploy (na pasta `prototipo`, trocando `v4` pela próxima versão):
 
 ```powershell
-docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v3 .
-docker push mtsrodrigues4991/hidro-backend:v3
-az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v3
+docker build --platform linux/amd64 -f backend/Dockerfile -t mtsrodrigues4991/hidro-backend:v4 .
+docker push mtsrodrigues4991/hidro-backend:v4
+az containerapp update -n ca-hidrocongo -g SAO-PAULO-team-2 --image docker.io/mtsrodrigues4991/hidro-backend:v4
 ```
 
 ## Documentação

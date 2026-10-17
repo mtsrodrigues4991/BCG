@@ -48,9 +48,20 @@ os números batem.
 ### Regerar os dados
 
 ```bash
-python3 -m pip install numpy shapely pillow
-python3 pipeline/build_data.py      # baixa com cache em .cache/ e grava data/
+python3 -m pip install numpy shapely pillow earthengine-api
+python3 pipeline/build_data.py      # grade, DEM, clima, rios (cache em .cache/) -> data/
+python3 pipeline/build_bgs.py       # produtividade de aquíferos do BGS (modelo v2)
+python3 pipeline/build_gee.py       # GLOBGM, CHIRPS, SoilGrids, WorldPop, JRC via Earth Engine (~6 min)
+python3 pipeline/build_wpdx.py      # pontos de água do WPdx (validação)
 ```
+
+O `build_gee.py` precisa de `EE_PROJECT` e `EE_SERVICE_ACCOUNT_KEY` (JSON de conta de serviço,
+guardado fora do repositório) ou do login de `earthengine authenticate`. Só ele usa o Earth Engine:
+o app lê os arquivos gerados em `data/` e não precisa da credencial.
+
+O app tem dois modelos (bloco **Model**): **v1** com as aproximações descritas abaixo e **v2** com
+dados reais (BGS, GLOBGM, CHIRPS, SoilGrids). A comparação dos dois com pontos de água reais (WPdx)
+está no painel **Validation** e em [VALIDACAO.md](VALIDACAO.md).
 
 ## Deploy na Azure
 

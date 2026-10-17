@@ -32,18 +32,89 @@
     return n;
   }
 
-  // texto com URLs clicáveis, sem innerHTML com conteúdo vindo do modelo
-  function linkify(node, text) {
-    const re = /https?:\/\/[^\s<>()"']+[^\s<>()"'.,;:!?]/g;
+  // markdown leve via DOM (sem innerHTML do modelo): **negrito**, *itálico*, `código`, listas, links
+  function appendMarks(node, text) {
+    const re = /\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|__(.+?)__|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<>()"']+[^\s<>()"'.,;:!?])|\*(?!\s)(.+?)\*(?!\*)|_(?!\s)(.+?)_(?!_)/g;
     let last = 0, m;
     while ((m = re.exec(text))) {
-      node.appendChild(document.createTextNode(text.slice(last, m.index)));
-      const a = el("a", null, { href: m[0], target: "_blank", rel: "noopener noreferrer" });
-      a.textContent = m[0];
-      node.appendChild(a);
+      if (m.index > last) node.appendChild(document.createTextNode(text.slice(last, m.index)));
+      if (m[1]) {
+        const s = el("strong"), em = el("em");
+        em.textContent = m[1];
+        s.appendChild(em);
+        node.appendChild(s);
+      } else if (m[2] || m[3]) {
+        const s = el("strong");
+        s.textContent = m[2] || m[3];
+        node.appendChild(s);
+      } else if (m[4]) {
+        const code = el("code");
+        code.textContent = m[4];
+        node.appendChild(code);
+      } else if (m[5] && m[6]) {
+        const a = el("a", null, { href: m[6], target: "_blank", rel: "noopener noreferrer" });
+        a.textContent = m[5];
+        node.appendChild(a);
+      } else if (m[7]) {
+        const a = el("a", null, { href: m[7], target: "_blank", rel: "noopener noreferrer" });
+        a.textContent = m[7];
+        node.appendChild(a);
+      } else {
+        const em = el("em");
+        em.textContent = m[8] || m[9];
+        node.appendChild(em);
+      }
       last = m.index + m[0].length;
     }
-    node.appendChild(document.createTextNode(text.slice(last)));
+    if (last < text.length) node.appendChild(document.createTextNode(text.slice(last)));
+  }
+
+  function appendInline(node, text) {
+    const parts = text.split("\n");
+    parts.forEach((part, i) => {
+      appendMarks(node, part);
+      if (i < parts.length - 1) node.appendChild(el("br"));
+    });
+  }
+
+  function renderMd(root, text) {
+    const lines = String(text || "").replace(/\r\n/g, "\n").split("\n");
+    let i = 0;
+    while (i < lines.length) {
+      if (!lines[i].trim()) { i++; continue; }
+      const heading = /^(#{1,3})\s+(.+)$/.exec(lines[i]);
+      if (heading) {
+        const h = el("h" + (heading[1].length + 1));
+        appendInline(h, heading[2]);
+        root.appendChild(h);
+        i++;
+        continue;
+      }
+      const isUl = /^[-*]\s+/.test(lines[i]);
+      const isOl = /^\d+[.)]\s+/.test(lines[i]);
+      if (isUl || isOl) {
+        const list = el(isUl ? "ul" : "ol");
+        while (i < lines.length) {
+          const item = isUl ? /^[-*]\s+(.+)$/.exec(lines[i]) : /^\d+[.)]\s+(.+)$/.exec(lines[i]);
+          if (!item) break;
+          const li = el("li");
+          appendInline(li, item[1]);
+          list.appendChild(li);
+          i++;
+        }
+        root.appendChild(list);
+        continue;
+      }
+      const bits = [];
+      while (i < lines.length && lines[i].trim() &&
+             !/^#{1,3}\s+/.test(lines[i]) && !/^[-*]\s+/.test(lines[i]) && !/^\d+[.)]\s+/.test(lines[i])) {
+        bits.push(lines[i]);
+        i++;
+      }
+      const p = el("p");
+      appendInline(p, bits.join("\n"));
+      root.appendChild(p);
+    }
   }
 
   const bubble = el("button", "cw-bubble", { type: "button", "aria-label": `Chat with ${NAME}, the water assistant`,
@@ -85,7 +156,7 @@
   function addMsg(role, text, sources) {
     const m = el("div", "cw-msg cw-" + role);
     const body = el("div", "cw-text");
-    linkify(body, text);
+    renderMd(body, text);
     m.appendChild(body);
     if (sources && sources.length) {
       const list = el("ol", "cw-sources");
@@ -147,11 +218,22 @@
     }
   }
 
+  function setHint(on) {
+    hint.hidden = !on;
+    document.body.classList.toggle("cw-hint-open", on);
+    if (on) {
+      requestAnimationFrame(() => {
+        const h = hint.getBoundingClientRect().height;
+        document.documentElement.style.setProperty("--cw-hint-lift", Math.ceil(h + 36) + "px");
+      });
+    }
+  }
+
   function toggle(open) {
     panel.hidden = !open;
     bubble.setAttribute("aria-expanded", String(open));
     bubble.classList.toggle("cw-open", open);
-    hint.hidden = true;
+    setHint(false);
     if (open) {
       if (!msgs.childElementCount)
         addMsg("assistant", `Hi! I'm ${NAME}, which means "rain" in Lingala. Ask me about rainfall, aquifers, boreholes or water legislation in the Democratic Republic of the Congo (DRC). I search the web and cite my sources.`);
@@ -177,6 +259,6 @@
 
   hint.addEventListener("click", () => toggle(true));
   document.body.append(panel, hint, bubble);
-  setTimeout(() => { if (panel.hidden) hint.hidden = false; }, 1200);
-  setTimeout(() => { hint.hidden = true; }, 9000);
+  setTimeout(() => { if (panel.hidden) setHint(true); }, 1200);
+  setTimeout(() => setHint(false), 9000);
 })();

@@ -39,18 +39,23 @@
 
     <section class="block">
       <h2>Irrigation project</h2>
-      <label class="slider" for="area_ha">Irrigated area <output id="o_area_ha"></output>
-        <input id="area_ha" type="range" min="1" max="100" step="1" value="5">
+      <p class="hint">A hypothetical irrigation scheme evaluated in every cell: is a borehole or river pumping the better way to supply it?</p>
+      <label class="slider" for="area_ha"><span class="lbl">Irrigated area <button type="button" class="info" aria-label="About irrigated area" aria-expanded="false" aria-controls="tip-area_ha">i</button></span> <output id="o_area_ha"></output>
+        <input id="area_ha" aria-describedby="tip-area_ha" type="range" min="1" max="100" step="1" value="5">
       </label>
-      <label class="slider" for="c_energia">Energy cost <output id="o_c_energia"></output>
-        <input id="c_energia" type="range" min="0.05" max="0.6" step="0.01" value="0.22">
+      <p class="tip" id="tip-area_ha" hidden>The area you want to irrigate. It sets the water demand: area × 5 mm/day pumped in 8 h/day (5 ha ≈ 8.7 L/s). More area means more boreholes (limited by the aquifer's yield, max. 20) and a stricter test of whether 10% of the river flow can cover it.</p>
+      <label class="slider" for="c_energia"><span class="lbl">Energy cost <button type="button" class="info" aria-label="About energy cost" aria-expanded="false" aria-controls="tip-c_energia">i</button></span> <output id="o_c_energia"></output>
+        <input id="c_energia" aria-describedby="tip-c_energia" type="range" min="0.05" max="0.6" step="0.01" value="0.22">
       </label>
-      <label class="slider" for="WTD_max">Max. viable depth (WTD_max) <output id="o_WTD_max"></output>
-        <input id="WTD_max" type="range" min="20" max="150" step="5" value="60">
+      <p class="tip" id="tip-c_energia" hidden>Price of pumping energy (default: off-grid diesel/solar equivalent). It multiplies the operating cost of both options, so the higher it is, the more the water lift weighs: water-table depth for boreholes, river-to-field height and pipe length for rivers.</p>
+      <label class="slider" for="WTD_max"><span class="lbl">Max. viable depth (WTD_max) <button type="button" class="info" aria-label="About max. viable depth" aria-expanded="false" aria-controls="tip-WTD_max">i</button></span> <output id="o_WTD_max"></output>
+        <input id="WTD_max" aria-describedby="tip-WTD_max" type="range" min="20" max="150" step="5" value="60">
       </label>
-      <label class="slider" for="D_max_km">Max. distance to river (D_max) <output id="o_D_max_km"></output>
-        <input id="D_max_km" type="range" min="2" max="40" step="1" value="15">
+      <p class="tip" id="tip-WTD_max" hidden>Deepest water table you consider viable. Borehole success probability is multiplied by (1 − depth ÷ WTD_max): a water table at half this depth halves it, and beyond it the borehole is ruled out.</p>
+      <label class="slider" for="D_max_km"><span class="lbl">Max. distance to river (D_max) <button type="button" class="info" aria-label="About max. distance to river" aria-expanded="false" aria-controls="tip-D_max_km">i</button></span> <output id="o_D_max_km"></output>
+        <input id="D_max_km" aria-describedby="tip-D_max_km" type="range" min="2" max="40" step="1" value="15">
       </label>
+      <p class="tip" id="tip-D_max_km" hidden>Farthest a river intake is considered. River suitability falls linearly with distance and reaches zero at this value; rivers farther away are discarded. Raising it opens more cells to river pumping.</p>
     </section>
 
     <details class="block" id="weights">

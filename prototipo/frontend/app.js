@@ -458,6 +458,16 @@
       });
     }
     for (const b of document.querySelectorAll("[data-layer]")) b.addEventListener("click", () => setLayer(b.dataset.layer));
+    // explicações dos controles (ⓘ): abre/fecha a caixa logo abaixo do slider
+    for (const b of document.querySelectorAll(".info")) {
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        const tip = $(b.getAttribute("aria-controls")), open = tip.hidden;
+        tip.hidden = !open;
+        b.setAttribute("aria-expanded", String(open));
+      });
+      b.addEventListener("keydown", (e) => { if (e.key === "Escape") { $(b.getAttribute("aria-controls")).hidden = true; b.setAttribute("aria-expanded", "false"); } });
+    }
     $("overlay").addEventListener("change", (e) => setOverlay(e.target.checked));
     $("opacity").addEventListener("input", (e) => { state.opacity = Number(e.target.value); cellLayer.setStyle(cellStyle); });
     for (const b of document.querySelectorAll("[data-base]")) {

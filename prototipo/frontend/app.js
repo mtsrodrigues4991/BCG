@@ -444,7 +444,34 @@
     }, STATIC ? 60 : 200);
   }
 
+  // controles da interface que não dependem dos dados: ligados antes de carregar a API
+  function initChrome() {
+    $("side-toggle").addEventListener("click", () => setSide(document.querySelector(".app").classList.contains("side-collapsed")));
+    let sideOpen = true;
+    try { sideOpen = localStorage.getItem("hidro-side") !== "closed"; } catch (e) {}
+    setSide(sideOpen);
+
+    // tema: um botão alterna claro/escuro; sem escolha salva, segue o sistema
+    const root = document.documentElement, mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : mq.matches;
+    const sync = () => {
+      const dark = isDark(), label = dark ? "Switch to light theme" : "Switch to dark theme";
+      const b = $("theme-toggle");
+      b.classList.toggle("is-dark", dark);
+      b.setAttribute("aria-label", label);
+      b.title = label;
+    };
+    $("theme-toggle").addEventListener("click", () => {
+      root.dataset.theme = isDark() ? "light" : "dark";
+      try { localStorage.setItem("hidro-theme", root.dataset.theme); } catch (e) {}
+      sync();
+    });
+    (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(sync);
+    sync();
+  }
+
   async function main() {
+    initChrome();
     $("start_month").innerHTML = MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
     $("start_month").value = "6";
     let data;
@@ -469,20 +496,6 @@
       });
     }
     for (const b of document.querySelectorAll("[data-layer]")) b.addEventListener("click", () => setLayer(b.dataset.layer));
-    $("side-toggle").addEventListener("click", () => setSide(document.querySelector(".app").classList.contains("side-collapsed")));
-    let sideOpen = true;
-    try { sideOpen = localStorage.getItem("hidro-side") !== "closed"; } catch (e) {}
-    setSide(sideOpen);
-
-    // tema: light / dark força data-theme; auto remove e segue o sistema (o observer abaixo recolore o mapa)
-    const setTheme = (t) => {
-      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
-      else delete document.documentElement.dataset.theme;
-      try { localStorage.setItem("hidro-theme", t); } catch (e) {}
-      for (const b of document.querySelectorAll("[data-theme-opt]")) b.setAttribute("aria-checked", b.dataset.themeOpt === t ? "true" : "false");
-    };
-    for (const b of document.querySelectorAll("[data-theme-opt]")) b.addEventListener("click", () => setTheme(b.dataset.themeOpt));
-    setTheme(document.documentElement.dataset.theme || "auto");
 
     // explicações dos controles (ⓘ): abre/fecha a caixa logo abaixo do slider
     for (const b of document.querySelectorAll(".info")) {

@@ -44,6 +44,16 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(chat_router)
 
 
+@app.middleware("http")
+async def revalidate_frontend(request, call_next):
+    """Frontend com Cache-Control: no-cache, para o navegador não reaproveitar JS/CSS antigos após um deploy
+    (o ETag do StaticFiles faz a revalidação custar só um 304)."""
+    resp = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        resp.headers.setdefault("Cache-Control", "no-cache")
+    return resp
+
+
 @lru_cache
 def resolutions() -> dict:
     """Grades disponíveis, ex. {"0.4": {"file": "cells.geojson", ...}, "0.2": {...}}; a primeira é a padrão."""

@@ -102,6 +102,9 @@ Parâmetros aceitos em `params`: `horizon_months` (6, 12 ou qualquer valor de 1 
 `env_flow_frac`, custos (`C_fixo`, `c_perf`, `c_revest`, `C_bomba`, `C_inst`, `C_bomba_rio`,
 `C_captacao`, `c_energia`), `eta` e os pesos `w1`…`w5`. Padrões em `model.py`.
 
+O que cada controle do bloco **Irrigation project** faz, as fórmulas e os parâmetros fixos estão em
+[PARAMETROS.md](PARAMETROS.md).
+
 ## Dados: o que é real e o que é sintético
 
 **Reais (abertos):**

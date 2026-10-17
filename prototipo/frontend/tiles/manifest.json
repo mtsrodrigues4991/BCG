@@ -1,0 +1,68 @@
+{
+  "layers": {
+    "relief": {
+      "label": "Relief",
+      "ext": "jpg",
+      "max_zoom": 8,
+      "attribution": "SRTM 1 arc-second (NASA/USGS), via Google Earth Engine",
+      "min_zoom": 4,
+      "bounds": [
+        11.701004882052114,
+        -13.958999993641363,
+        31.776708676411726,
+        5.891993083299189
+      ]
+    },
+    "cover": {
+      "label": "Land cover",
+      "ext": "png",
+      "max_zoom": 8,
+      "attribution": "ESA WorldCover 2021 v200, via Google Earth Engine",
+      "legend": [
+        {
+          "label": "Tree cover",
+          "color": "#006400"
+        },
+        {
+          "label": "Shrubland",
+          "color": "#ffbb22"
+        },
+        {
+          "label": "Grassland",
+          "color": "#ffff4c"
+        },
+        {
+          "label": "Cropland",
+          "color": "#f096ff"
+        },
+        {
+          "label": "Built-up",
+          "color": "#fa0000"
+        },
+        {
+          "label": "Bare / sparse",
+          "color": "#b4b4b4"
+        },
+        {
+          "label": "Permanent water",
+          "color": "#0064c8"
+        },
+        {
+          "label": "Herbaceous wetland",
+          "color": "#0096a0"
+        },
+        {
+          "label": "Mangroves",
+          "color": "#00cf75"
+        }
+      ],
+      "min_zoom": 4,
+      "bounds": [
+        11.701004882052114,
+        -13.958999993641363,
+        31.776708676411726,
+        5.891993083299189
+      ]
+    }
+  }
+}

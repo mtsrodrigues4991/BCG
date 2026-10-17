@@ -1,4 +1,4 @@
-"""API WareWise (FastAPI).
+"""API Wherewise (FastAPI).
 
 Endpoints principais:
   GET  /api/health
@@ -40,7 +40,7 @@ BASE = Path(__file__).resolve().parent.parent.parent
 DATA = Path(os.environ.get("HIDRO_DATA", BASE / "data"))
 FRONTEND = Path(os.environ.get("HIDRO_FRONTEND", BASE / "frontend"))
 
-app = FastAPI(title="WareWise API", version="0.1.0",
+app = FastAPI(title="Wherewise API", version="0.1.0",
               description="Borehole vs. river pumping recommendations for the Democratic Republic of the Congo")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(chat_router)

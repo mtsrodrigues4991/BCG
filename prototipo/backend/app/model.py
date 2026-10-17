@@ -53,6 +53,7 @@ def ahp_weights(matrix=AHP_MATRIX, iters=100):
 
 @dataclass
 class Params:
+    model_version: int = 1          # 1 = covariáveis sintéticas; 2 = dados reais (BGS, GLOBGM, CHIRPS, SoilGrids)
     horizon_months: int = 12        # 6, 12 ou customizado
     start_month: int = 6            # 1..12 (junho = início da estação seca no sul da RDC)
     area_ha: float = 5.0            # área irrigada
@@ -116,6 +117,20 @@ def window(p: Params):
     return [(p.start_month - 1 + k) % 12 for k in range(p.horizon_months)]
 
 
+def effective(c: dict, p: Params) -> dict:
+    """Modelo v2: troca as covariáveis sintéticas pelas reais quando a célula as tiver."""
+    if p.model_version != 2:
+        return c
+    e = dict(c)
+    if c.get("P_m_chirps"):
+        e["P_m"], e["P"] = c["P_m_chirps"], c["P_chirps"]
+    if c.get("bgs_yield_Ls") is not None:
+        e["yield_Ls"], e["lito"] = c["bgs_yield_Ls"], c["bgs_fav"]
+    if c.get("sand") is not None:
+        e["So"] = clip(0.15 + 0.009 * c["sand"] - 0.006 * c["clay"], 0.1, 0.95)
+    return e
+
+
 def wtd(c: dict) -> float:
     """Regressão da seção 3.2 (coeficientes β ilustrativos, sem poços de calibração)."""
     v = (c["WTD0"] + 0.22 * c["HAND"] + 0.8 * c["S"] + 8.0 * c["C"] + 0.9 * c["D_d_km"]
@@ -168,6 +183,7 @@ def river_option(src: dict, c: dict, q_dem: float, months: list, p: Params, hour
 
 
 def evaluate(c: dict, p: Params) -> dict:
+    c = effective(c, p)
     months = window(p)
     hpd = p.hours_per_day
     q_dem = p.area_ha * p.irrigation_mm_day * 10 / (hpd * 3600)  # m³/s durante a operação
@@ -177,7 +193,7 @@ def evaluate(c: dict, p: Params) -> dict:
     # --- águas subterrâneas -------------------------------------------------
     alpha = 0.15 + 0.20 * c["So"]
     R = alpha * c["P"]
-    W = wtd(c)
+    W = clip(c["wtd_g_p25"], 1.5, 150.0) if p.model_version == 2 and c.get("wtd_g_p25") is not None else wtd(c)
     fx = gpi_factors(c, R)
     GPI = sum(GPI_W[i] * fx[f] for i, f in enumerate(GPI_FACTORS))
     P_poco = clip(GPI * (1 - W / p.WTD_max) * min(1.0, R / p.R_ref))

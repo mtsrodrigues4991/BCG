@@ -31,7 +31,8 @@ process.stdout.write(JSON.stringify(out));
 @pytest.mark.skipif(not shutil.which("node"), reason="node não instalado")
 def test_js_python_parity():
     rng = random.Random(1)
-    cases = [{}, {"horizon_months": 6, "start_month": 1}, {"horizon_months": 30, "area_ha": 40, "c_energia": 0.4}]
+    cases = [{}, {"horizon_months": 6, "start_month": 1}, {"horizon_months": 30, "area_ha": 40, "c_energia": 0.4},
+             {"model_version": 2}, {"model_version": 2, "horizon_months": 6, "area_ha": 30}]
     for _ in range(3):
         cases.append({"horizon_months": rng.randint(1, 24), "start_month": rng.randint(1, 12),
                       "area_ha": rng.uniform(1, 50), "w1": rng.random(), "w3": rng.random(), "D_max_km": rng.uniform(3, 30)})

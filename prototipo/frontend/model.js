@@ -36,7 +36,7 @@
   }
 
   const DEFAULTS = {
-    horizon_months: 12, start_month: 6, area_ha: 5.0, irrigation_mm_day: 5.0, hours_per_day: 8.0,
+    model_version: 1, horizon_months: 12, start_month: 6, area_ha: 5.0, irrigation_mm_day: 5.0, hours_per_day: 8.0,
     WTD_max: 60.0, R_ref: 200.0, h_sat: 8.0, drawdown: 5.0, C_fixo: 1200.0, c_perf: 70.0,
     c_revest: 35.0, C_bomba: 1500.0, C_inst: 1200.0, c_mob_km: 15.0, max_wells: 20,
     Dz_max: 100.0, D_max_km: 15.0, env_flow_frac: 0.1, C_bomba_rio: 2500.0, C_captacao: 1500.0,
@@ -58,6 +58,16 @@
   const clip = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
   const sum = (a) => a.reduce((s, x) => s + x, 0);
   const windowMonths = (p) => Array.from({ length: p.horizon_months }, (_, k) => (p.start_month - 1 + k) % 12);
+
+  // modelo v2: troca as covariáveis sintéticas pelas reais quando a célula as tiver
+  function effective(c, p) {
+    if (p.model_version !== 2) return c;
+    const e = Object.assign({}, c);
+    if (c.P_m_chirps) { e.P_m = c.P_m_chirps; e.P = c.P_chirps; }
+    if (c.bgs_yield_Ls !== undefined && c.bgs_yield_Ls !== null) { e.yield_Ls = c.bgs_yield_Ls; e.lito = c.bgs_fav; }
+    if (c.sand !== undefined && c.sand !== null) e.So = clip(0.15 + 0.009 * c.sand - 0.006 * c.clay, 0.1, 0.95);
+    return e;
+  }
 
   function wtd(c) {
     const v = c.WTD0 + 0.22 * c.HAND + 0.8 * c.S + 8.0 * c.C + 0.9 * c.D_d_km
@@ -103,7 +113,8 @@
     };
   }
 
-  function evaluate(c, p) {
+  function evaluate(c0, p) {
+    const c = effective(c0, p);
     const months = windowMonths(p);
     const hpd = p.hours_per_day;
     const qDem = (p.area_ha * p.irrigation_mm_day * 10) / (hpd * 3600);
@@ -113,7 +124,7 @@
 
     const alpha = 0.15 + 0.2 * c.So;
     const R = alpha * c.P;
-    const W = wtd(c);
+    const W = p.model_version === 2 && c.wtd_g_p25 !== undefined && c.wtd_g_p25 !== null ? clip(c.wtd_g_p25, 1.5, 150.0) : wtd(c);
     const fx = gpiFactors(c, R);
     const GPI = sum(GPI_FACTORS.map((f, i) => GPI_W[i] * fx[f]));
     const P_poco = clip(GPI * (1 - W / p.WTD_max) * Math.min(1, R / p.R_ref));

@@ -11,6 +11,7 @@ Endpoints principais:
   POST /api/cells/{id}/evaluate       detalhe completo de uma célula com parâmetros
   GET  /api/explain/{cell_id}         explicação em linguagem natural
   POST /api/ask                       perguntas à IA (Claude) sobre o plano e, opcionalmente, uma célula
+  POST /api/chat                      chat do assistente hídrico com busca web (rotas_chat.py)
 """
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ from pydantic import BaseModel
 from . import rag
 from .explain import explain
 from .model import AHP_CR, AHP_LAMBDA, GPI_FACTORS, GPI_W, Params, evaluate, summarize
+from .rotas_chat import router as chat_router
 
 BASE = Path(__file__).resolve().parent.parent.parent
 DATA = Path(os.environ.get("HIDRO_DATA", BASE / "data"))
@@ -37,6 +39,7 @@ FRONTEND = Path(os.environ.get("HIDRO_FRONTEND", BASE / "frontend"))
 app = FastAPI(title="Hidro Congo API", version="0.1.0",
               description="Recomendação de poço tubular x bombeamento de rio na República do Congo")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(chat_router)
 
 
 @lru_cache

@@ -59,6 +59,8 @@ O plano do MVP (2 recursos no resource group `SAO-PAULO-team-2`, imagem no Docke
 | `AZURE_MAPS_KEY` | chave do Azure Maps, usada quando `MAP_PROVIDER=azure` |
 | `ANTHROPIC_API_KEY` | liga a IA (Claude) no `/api/ask` e a caixa "Pergunte à IA" no painel da célula; sem ela a resposta é extrativa (BM25 local) |
 | `ANTHROPIC_MODEL` | modelo do Claude (padrão `claude-opus-5-5`) |
+| `BING_SUBSCRIPTION_KEY` | chave do Bing Web Search usada pelo chat (`/api/chat`); sem ela o chat usa a busca web nativa do Claude |
+| `BING_SEARCH_URL` | endpoint do Bing (padrão `https://api.bing.microsoft.com/v7.0/search`) |
 
 Veja `.env.example`.
 
@@ -69,6 +71,7 @@ pipeline/build_data.py     ETL: DEM, drenagem, clima, grade e covariáveis  -> d
 backend/app/model.py       fórmulas da seção 3 (WTD, R, GPI/AHP, P_poço, C_poço, A_sup, C_bombeamento, IR)
 backend/app/main.py        API FastAPI + serve o frontend
 backend/app/rag.py         RAG: BM25 local sobre o plano + resposta do Claude (SDK anthropic)
+backend/app/rotas_chat.py  chat com busca web (Claude + tool calling: Bing ou web_search)
 backend/app/explain.py     explicação em linguagem natural por célula
 frontend/                  Leaflet + JS puro (mesmo modelo em model.js para a demo estática)
 ```
@@ -87,6 +90,7 @@ frontend/                  Leaflet + JS puro (mesmo modelo em model.js para a de
 | GET | `/api/regions/{dept}` | resumo e células de um departamento |
 | GET | `/api/explain/{id}` | texto explicativo |
 | POST | `/api/ask` | `{"question": "...", "cell_id": 10, "params": {...}}` → resposta do Claude com trechos do plano e, se `cell_id` vier, os números da célula |
+| POST | `/api/chat` | `{"message": "...", "history": [{"role": "user", "content": "..."}]}` → resposta do assistente com busca web e `sources` (usado pelo widget de chat) |
 
 Parâmetros aceitos em `params`: `horizon_months` (6, 12 ou qualquer valor de 1 a 60), `start_month`,
 `area_ha`, `irrigation_mm_day`, `hours_per_day`, `WTD_max`, `R_ref`, `Dz_max`, `D_max_km`,

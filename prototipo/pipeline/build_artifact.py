@@ -31,6 +31,9 @@ def main():
     html = html.replace('<script src="model.js"></script>',
                         f"<script>window.HIDRO_DATA={payload};</script>\n<script>{(FE / 'model.js').read_text()}</script>")
     html = html.replace('<script src="app.js"></script>', f"<script>{(FE / 'app.js').read_text()}</script>")
+    # o chat depende do backend (/api/chat), então fica fora da demo estática
+    html = html.replace('<link rel="stylesheet" href="ChatWidget.css">\n', "")
+    html = html.replace('<script src="ChatWidget.js"></script>\n', "")
     DIST.mkdir(exist_ok=True)
     out = DIST / "hidro-congo.html"
     out.write_text(html)
